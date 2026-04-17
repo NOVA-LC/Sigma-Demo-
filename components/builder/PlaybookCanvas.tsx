@@ -22,7 +22,7 @@ function PlaybookCanvasInner({ children }: Props) {
   const nodeTypes = useMemo(() => ({ workflow: WorkflowNode }), []);
 
   return (
-    <div className="flex-1 bg-light-gray relative">
+    <div className="flex-1 w-full h-full bg-light-gray relative">
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -38,7 +38,7 @@ function PlaybookCanvasInner({ children }: Props) {
         panOnScroll={false}
         preventScrolling={false}
         fitView
-        fitViewOptions={{ padding: 0.35 }}
+        fitViewOptions={{ padding: 0.5, minZoom: 0.5, maxZoom: 1 }}
         proOptions={{ hideAttribution: true }}
         deleteKeyCode={null}
       >

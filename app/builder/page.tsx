@@ -5,7 +5,6 @@ import type { Edge, Node } from "reactflow";
 
 import BuilderHeader from "@/components/builder/BuilderHeader";
 import PlaybookCanvas from "@/components/builder/PlaybookCanvas";
-import Toolbox from "@/components/builder/Toolbox";
 import WelcomeModal from "@/components/builder/WelcomeModal";
 import Toast from "@/components/builder/Toast";
 import EscalationScreen from "@/components/builder/EscalationScreen";
@@ -14,71 +13,10 @@ import PivotBanner from "@/components/builder/PivotBanner";
 import {
   TRIGGER_BORDER_COLOR,
   TRIGGER_NODE_ID,
-  itemsById,
-  type CategoryId,
+  tutorialByStep,
 } from "@/components/builder/toolboxItems";
 import type { WorkflowNodeData } from "@/components/builder/WorkflowNode";
 import { useWorkflowStore } from "@/store/useWorkflowStore";
-
-/**
- * Tutorial state machine — each step tells the user exactly what to click.
- */
-type TutorialStep =
-  | "add-clear-cache"
-  | "add-reboot"
-  | "deploy"
-  | "running"
-  | "done";
-
-type TutorialConfig = {
-  activeCategoryId: CategoryId | null;
-  activeItemId: string | null;
-  tooltip: string | null;
-  highlightDeploy: boolean;
-};
-
-const tutorialByStep: Record<TutorialStep, TutorialConfig> = {
-  "add-clear-cache": {
-    activeCategoryId: "network",
-    activeItemId: "clear-gateway-cache",
-    tooltip: "Fastest low-risk attempt.",
-    highlightDeploy: false,
-  },
-  "add-reboot": {
-    activeCategoryId: "hardware",
-    activeItemId: "reboot-server",
-    tooltip: "Fallback if cache fails.",
-    highlightDeploy: false,
-  },
-  deploy: {
-    activeCategoryId: null,
-    activeItemId: null,
-    tooltip: null,
-    highlightDeploy: true,
-  },
-  running: {
-    activeCategoryId: null,
-    activeItemId: null,
-    tooltip: null,
-    highlightDeploy: false,
-  },
-  done: {
-    activeCategoryId: null,
-    activeItemId: null,
-    tooltip: null,
-    highlightDeploy: false,
-  },
-};
-
-const NODE_ID_BY_ITEM: Record<string, string> = {
-  "clear-gateway-cache": "node-clear-cache",
-  "reboot-server": "node-reboot-server",
-};
-
-const POSITION_BY_ITEM: Record<string, { x: number; y: number }> = {
-  "clear-gateway-cache": { x: 260, y: 180 },
-  "reboot-server": { x: 260, y: 320 },
-};
 
 const triggerNode: Node<WorkflowNodeData> = {
   id: TRIGGER_NODE_ID,
@@ -95,21 +33,32 @@ const triggerNode: Node<WorkflowNodeData> = {
   },
 };
 
-// Phase 1 — success cascade timings (relative to click)
-const SUCCESS = {
-  edgeAfter: 500,
-  nodeAfter: 1400,
-  stepDuration: 1500,
-  memorizationDelay: 500,
-};
+// ── Timing constants (all milliseconds from Execute click) ─────────────────
+//
+// The sequence tells a three-act story:
+//   1. Scenario 1 (Success):  Step 1 works, Step 2 never runs.
+//   2. Pivot:                 Dim screen, ask the "what if" question.
+//   3. Scenario 2 (Failure):  Reset, try Step 1, it fails, fall through to
+//                             Step 2, that also fails, escalate.
+//
+// Timings are intentionally slow so the user can read each beat.
 
-// Phase 2 — wait after success lands before pivoting
-const PIVOT_DWELL_MS = 4000;
+const SUCCESS_EDGE_AT = 600; // edge Trigger → ClearCache lights up blue
+const SUCCESS_NODE_AT = 1500; // ClearCache turns green + toast fires
+const MEMORIZATION_AT = 2000; // memorization banner drops + phase=resolved
 
-// Phase 3 — wait after pivot banner lands before escalating
-const ESCALATION_DWELL_MS = 3000;
-const NODE_RED_STAGGER_MS = 300;
-const ESCALATION_UI_AFTER_RED_MS = 700;
+const SUCCESS_DWELL_MS = 7000; // user gets 7s to read the success state
+const PIVOT_SHOW_AT = MEMORIZATION_AT + SUCCESS_DWELL_MS; // 9000
+
+const PIVOT_TEXT_MS = 4000; // "Simulation 2" text sits for 4s
+const PIVOT_FADE_MS = 500; // smooth fade of the dark overlay
+const PIVOT_HIDE_AT = PIVOT_SHOW_AT + PIVOT_TEXT_MS; // 13000
+
+const FAIL_RESET_AT = PIVOT_HIDE_AT + PIVOT_FADE_MS; // 13500
+const FAIL_FIRST_EDGE_AT = FAIL_RESET_AT + 300; // 13800
+const FAIL_STEP_GAP_MS = 1700; // edge-to-edge spacing inside the failure cascade
+const FAIL_NODE_AFTER_EDGE_MS = 900; // edge red → node red lag
+const ESCALATION_AFTER_LAST_FAIL_MS = 900;
 
 function walkFromTrigger(
   nodes: Node[],
@@ -142,15 +91,13 @@ export default function PlaybookBuilderPage() {
   const [escalationOpen, setEscalationOpen] = useState(false);
   const [memorizationShown, setMemorizationShown] = useState(false);
   const [pivotShown, setPivotShown] = useState(false);
-  const [tutorialStep, setTutorialStep] =
-    useState<TutorialStep>("add-clear-cache");
-  const [completedItemIds, setCompletedItemIds] = useState<string[]>([]);
 
-  const nodes = useWorkflowStore((s) => s.nodes);
-  const edges = useWorkflowStore((s) => s.edges);
   const setNodes = useWorkflowStore((s) => s.setNodes);
   const setEdges = useWorkflowStore((s) => s.setEdges);
   const setPhase = useWorkflowStore((s) => s.setPhase);
+  const tutorialStep = useWorkflowStore((s) => s.tutorialStep);
+  const setTutorialStep = useWorkflowStore((s) => s.setTutorialStep);
+  const resetTutorial = useWorkflowStore((s) => s.resetTutorial);
 
   const timeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
@@ -163,11 +110,10 @@ export default function PlaybookBuilderPage() {
     setEscalationOpen(false);
     setMemorizationShown(false);
     setPivotShown(false);
-    setTutorialStep("add-clear-cache");
-    setCompletedItemIds([]);
+    resetTutorial();
     setPhase("waiting-for-permission");
     return () => timeoutsRef.current.forEach(clearTimeout);
-  }, [setNodes, setEdges, setPhase]);
+  }, [setNodes, setEdges, setPhase, resetTutorial]);
 
   const tutorialConfig = tutorialByStep[tutorialStep];
 
@@ -175,79 +121,111 @@ export default function PlaybookBuilderPage() {
     timeoutsRef.current.push(setTimeout(fn, delay));
   };
 
-  const handleToolboxSelect = useCallback(
-    (itemId: string) => {
-      const item = itemsById[itemId];
-      if (!item) return;
+  // Strict gate: the tutorial must have reached the "deploy" step, which only
+  // happens after BOTH Clear Gateway Cache and Reboot Server have been added.
+  const tutorialReady = tutorialStep === "deploy";
 
-      const nodeId = NODE_ID_BY_ITEM[itemId];
-      const position = POSITION_BY_ITEM[itemId];
-      if (!nodeId || !position) return;
-
-      const s = useWorkflowStore.getState();
-
-      const newNode: Node<WorkflowNodeData> = {
-        id: nodeId,
-        type: "workflow",
-        position,
-        data: {
-          kind: "Action",
-          label: item.label,
-          accentColor: item.accentColor,
-          borderColor: "#E2E8F0",
-        },
-      };
-
-      const parentId =
-        itemId === "clear-gateway-cache"
-          ? TRIGGER_NODE_ID
-          : NODE_ID_BY_ITEM["clear-gateway-cache"];
-
-      const newEdge: Edge = {
-        id: `edge-${parentId}-${nodeId}`,
-        source: parentId,
-        target: nodeId,
-        animated: true,
-        style: { stroke: "#94A3B8", strokeWidth: 2 },
-      };
-
-      s.setNodes([...s.nodes, newNode]);
-      s.setEdges([...s.edges, newEdge]);
-
-      setCompletedItemIds((prev) => [...prev, itemId]);
-
-      if (itemId === "clear-gateway-cache") {
-        setTutorialStep("add-reboot");
-      } else if (itemId === "reboot-server") {
-        setTutorialStep("deploy");
-      }
-    },
-    [],
-  );
-
-  const hasSolutionConnected = edges.some(
-    (e) =>
-      e.source === TRIGGER_NODE_ID &&
-      nodes.some((n) => n.id === e.target && n.id !== TRIGGER_NODE_ID),
-  );
-
-  /**
-   * Single continuous story:
-   *   Phase 1: cascade nodes green, fire ROI toast, drop memorization banner.
-   *   Phase 2 (after 4 s dwell): clear success UI, show pivot banner.
-   *   Phase 3 (after 3 s dwell): flip nodes red, dim screen, show iOS lock.
-   */
   const runPlaybook = useCallback(() => {
     const s0 = useWorkflowStore.getState();
     const path = walkFromTrigger(s0.nodes, s0.edges);
     if (path.length === 0) return;
 
-    // ── Phase 1 — Success cascade ───────────────────────────────────────────
-    path.forEach((step, idx) => {
-      const base = idx * SUCCESS.stepDuration;
-      const isLast = idx === path.length - 1;
+    const firstStep = path[0]; // Trigger → Clear Gateway Cache
 
-      // Edge goes solid accent blue
+    // ── Act 1 — Success: Step 1 works, we stop ─────────────────────────────
+    // Edge Trigger → Clear Gateway Cache turns solid accent blue.
+    push(() => {
+      const s = useWorkflowStore.getState();
+      s.setEdges(
+        s.edges.map((e) =>
+          e.id === firstStep.edgeId
+            ? {
+                ...e,
+                animated: false,
+                style: { stroke: "#0099FF", strokeWidth: 3 },
+              }
+            : e,
+        ),
+      );
+    }, SUCCESS_EDGE_AT);
+
+    // Clear Gateway Cache turns green. Toast fires.
+    // Reboot Server is NEVER touched — it stays gray because Step 1 succeeded.
+    push(() => {
+      const s = useWorkflowStore.getState();
+      s.setNodes(
+        s.nodes.map((n) =>
+          n.id === firstStep.nodeId
+            ? {
+                ...n,
+                data: {
+                  ...(n.data as WorkflowNodeData),
+                  borderColor: "#10B981",
+                  success: true,
+                  failed: false,
+                },
+              }
+            : n,
+        ),
+      );
+      setToastVisible(true);
+      setDeployState("deployed");
+      setTutorialStep("done");
+    }, SUCCESS_NODE_AT);
+
+    // Memorization banner drops; breadcrumb → "Resolved & Memorized".
+    push(() => {
+      setMemorizationShown(true);
+      setPhase("resolved");
+    }, MEMORIZATION_AT);
+
+    // ── Act 2 — The Pivot ──────────────────────────────────────────────────
+    // After a long 7s dwell the success artefacts disappear, the screen
+    // dims, and the "Simulation 2" headline fades in.
+    push(() => {
+      setToastVisible(false);
+      setMemorizationShown(false);
+      setPivotShown(true);
+      setDeployState("executing");
+      setPhase("executing");
+    }, PIVOT_SHOW_AT);
+
+    // Pivot text sits for PIVOT_TEXT_MS, then the overlay fades out.
+    push(() => setPivotShown(false), PIVOT_HIDE_AT);
+
+    // ── Act 3 — Failure cascade ────────────────────────────────────────────
+    // 1. Reset every action node + every edge to the idle state so the user
+    //    sees a clean slate before the red run begins.
+    push(() => {
+      const s = useWorkflowStore.getState();
+      s.setNodes(
+        s.nodes.map((n) => {
+          if (n.id === TRIGGER_NODE_ID) return n;
+          return {
+            ...n,
+            data: {
+              ...(n.data as WorkflowNodeData),
+              borderColor: "#E2E8F0",
+              success: false,
+              failed: false,
+            },
+          };
+        }),
+      );
+      s.setEdges(
+        s.edges.map((e) => ({
+          ...e,
+          animated: true,
+          style: { stroke: "#94A3B8", strokeWidth: 2 },
+        })),
+      );
+    }, FAIL_RESET_AT);
+
+    // 2. Walk each step in order: edge → red, then node → red + Failed badge.
+    path.forEach((step, idx) => {
+      const edgeAt = FAIL_FIRST_EDGE_AT + idx * FAIL_STEP_GAP_MS;
+      const nodeAt = edgeAt + FAIL_NODE_AFTER_EDGE_MS;
+
       push(() => {
         const s = useWorkflowStore.getState();
         s.setEdges(
@@ -256,70 +234,13 @@ export default function PlaybookBuilderPage() {
               ? {
                   ...e,
                   animated: false,
-                  style: { stroke: "#0099FF", strokeWidth: 3 },
+                  style: { stroke: "#EF4444", strokeWidth: 3 },
                 }
               : e,
           ),
         );
-      }, base + SUCCESS.edgeAfter);
+      }, edgeAt);
 
-      // Node flips to green + Success badge. Final node also fires the toast.
-      push(() => {
-        const s = useWorkflowStore.getState();
-        s.setNodes(
-          s.nodes.map((n) =>
-            n.id === step.nodeId
-              ? {
-                  ...n,
-                  data: {
-                    ...(n.data as WorkflowNodeData),
-                    borderColor: "#10B981",
-                    success: true,
-                    failed: false,
-                  },
-                }
-              : n,
-          ),
-        );
-        if (isLast) {
-          setToastVisible(true);
-          setDeployState("deployed");
-          setTutorialStep("done");
-        }
-      }, base + SUCCESS.nodeAfter);
-    });
-
-    const phase1NodeEndAt =
-      (path.length - 1) * SUCCESS.stepDuration + SUCCESS.nodeAfter;
-
-    // Memorization banner drops right after the final green node.
-    const memorizationAt = phase1NodeEndAt + SUCCESS.memorizationDelay;
-    push(() => {
-      setMemorizationShown(true);
-      setPhase("resolved");
-    }, memorizationAt);
-
-    // ── Phase 2 — The Pivot ────────────────────────────────────────────────
-    const pivotAt = memorizationAt + PIVOT_DWELL_MS;
-    push(() => {
-      setToastVisible(false);
-      setMemorizationShown(false);
-      setPivotShown(true);
-      // Flip the button back to executing; breadcrumb regresses too.
-      setDeployState("executing");
-      setPhase("executing");
-    }, pivotAt);
-
-    // ── Phase 3 — The Escalation ───────────────────────────────────────────
-    const redStartAt = pivotAt + ESCALATION_DWELL_MS;
-
-    // Hide the pivot banner right before the carnage starts, so the user's
-    // focus snaps to the nodes flipping red.
-    push(() => setPivotShown(false), redStartAt);
-
-    // Cascade each node and its inbound edge from green to red.
-    path.forEach((step, idx) => {
-      const delay = redStartAt + idx * NODE_RED_STAGGER_MS;
       push(() => {
         const s = useWorkflowStore.getState();
         s.setNodes(
@@ -337,49 +258,35 @@ export default function PlaybookBuilderPage() {
               : n,
           ),
         );
-        s.setEdges(
-          s.edges.map((e) =>
-            e.id === step.edgeId
-              ? {
-                  ...e,
-                  animated: false,
-                  style: { stroke: "#EF4444", strokeWidth: 3 },
-                }
-              : e,
-          ),
-        );
-      }, delay);
+      }, nodeAt);
     });
 
-    // Final UI: dim + iOS lock screen. The EscalationScreen owns both the
-    // fade-to-black backdrop and the phone slide-up animation.
-    const escalationUiAt =
-      redStartAt +
-      (path.length - 1) * NODE_RED_STAGGER_MS +
-      ESCALATION_UI_AFTER_RED_MS;
-
+    // 3. Guardrails exhausted → iOS lock screen slides up.
+    const lastNodeAt =
+      FAIL_FIRST_EDGE_AT +
+      (path.length - 1) * FAIL_STEP_GAP_MS +
+      FAIL_NODE_AFTER_EDGE_MS;
+    const escalationUiAt = lastNodeAt + ESCALATION_AFTER_LAST_FAIL_MS;
     push(() => {
       setDeployState("failed");
       setEscalationOpen(true);
     }, escalationUiAt);
-  }, [setPhase]);
+  }, [setPhase, setTutorialStep]);
 
   const handleDeploy = useCallback(() => {
-    if (!hasSolutionConnected || deployState !== "idle") return;
+    if (!tutorialReady || deployState !== "idle") return;
 
     setDeployState("executing");
     setTutorialStep("running");
     setPhase("executing");
 
     runPlaybook();
-  }, [hasSolutionConnected, deployState, runPlaybook, setPhase]);
+  }, [tutorialReady, deployState, runPlaybook, setPhase, setTutorialStep]);
 
-  const deployDisabled = !hasSolutionConnected || deployState !== "idle";
+  const deployDisabled = !tutorialReady || deployState !== "idle";
 
   return (
-    <div className="flex flex-col min-h-screen">
-      {/* Global header (breadcrumbs only) with a local sub-row for the page
-          title and the Execute Playbook action. */}
+    <div className="flex flex-col h-screen">
       <BuilderHeader>
         <div className="flex items-center justify-between gap-6">
           <div>
@@ -412,17 +319,15 @@ export default function PlaybookBuilderPage() {
               onClick={handleDeploy}
               disabled={deployDisabled}
               className={`font-heading font-semibold text-[13px] px-4 py-2 rounded-md transition-all inline-flex items-center gap-2 ${
-                deployState === "idle" && hasSolutionConnected
-                  ? tutorialConfig.highlightDeploy
-                    ? "bg-primary-navy hover:bg-[#002a47] text-white animate-cta-pulse"
-                    : "bg-primary-navy hover:bg-[#002a47] text-white shadow-sm"
+                deployState === "idle" && tutorialReady
+                  ? "bg-primary-navy hover:bg-[#002a47] text-white cursor-pointer animate-cta-pulse"
                   : deployState === "executing"
                     ? "bg-primary-navy text-white/90 cursor-wait"
                     : deployState === "deployed"
                       ? "bg-emerald-600 text-white"
                       : deployState === "failed"
                         ? "bg-red-600 text-white"
-                        : "bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200"
+                        : "bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200 opacity-50"
               }`}
             >
               {deployState === "executing" && (
@@ -444,15 +349,8 @@ export default function PlaybookBuilderPage() {
         </div>
       </BuilderHeader>
 
-      {/* Split layout */}
-      <div className="flex flex-1 overflow-hidden">
-        <Toolbox
-          activeCategoryId={tutorialConfig.activeCategoryId}
-          activeItemId={tutorialConfig.activeItemId}
-          tooltip={tutorialConfig.tooltip}
-          completedItemIds={completedItemIds}
-          onSelect={handleToolboxSelect}
-        />
+      {/* Canvas fills all remaining space below the header */}
+      <div className="flex-1 w-full h-full overflow-hidden flex">
         <PlaybookCanvas>
           {memorizationShown && <MemorizationBanner />}
         </PlaybookCanvas>
@@ -465,7 +363,7 @@ export default function PlaybookBuilderPage() {
         message="Crisis averted. Time saved: 45 minutes. Sleep preserved."
       />
 
-      {pivotShown && <PivotBanner />}
+      <PivotBanner visible={pivotShown} />
 
       {escalationOpen && <EscalationScreen />}
     </div>

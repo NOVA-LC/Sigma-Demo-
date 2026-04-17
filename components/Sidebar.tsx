@@ -4,6 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 
+import RemediationCatalog from "@/components/RemediationCatalog";
+
 /* ── Minimal line icons ─────────────────────────────────────────────────── */
 
 function RadarIcon() {
@@ -126,9 +128,7 @@ type PrimaryLink = {
   href: string;
   label: string;
   icon: ReactNode;
-  /** Always-on indicator (e.g. live incident). */
   persistentDot?: DotColor;
-  /** Shown only when that route is currently active. */
   activeDot?: DotColor;
 };
 
@@ -153,15 +153,26 @@ const systemLinks: { label: string; icon: ReactNode }[] = [
   { label: "Settings", icon: <GearIcon /> },
 ];
 
+/* ── Section label ──────────────────────────────────────────────────────── */
+
+function SectionLabel({ children }: { children: ReactNode }) {
+  return (
+    <div className="px-[22px] pt-4 pb-1.5 text-[9px] font-heading font-semibold tracking-[0.24em] text-white/30 uppercase">
+      {children}
+    </div>
+  );
+}
+
 /* ── Sidebar ────────────────────────────────────────────────────────────── */
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const isBuilder = pathname === "/builder";
 
   return (
-    <aside className="fixed inset-y-0 left-0 w-64 bg-primary-navy text-white flex flex-col">
+    <aside className="fixed inset-y-0 left-0 w-80 bg-primary-navy text-white flex flex-col">
       {/* Brand */}
-      <div className="px-5 py-5 border-b border-white/5">
+      <div className="px-5 py-5 border-b border-white/5 shrink-0">
         <div className="flex items-center gap-2.5">
           <div className="w-7 h-7 rounded-md bg-gradient-to-br from-[#33ADFF] to-[#0077CC] flex items-center justify-center text-white font-heading font-bold text-sm shadow-[0_2px_8px_rgba(0,153,255,0.35)]">
             σ
@@ -177,8 +188,10 @@ export default function Sidebar() {
         </div>
       </div>
 
-      <nav className="flex-1 overflow-y-auto py-4">
-        {/* Primary links */}
+      {/* Scrollable body */}
+      <div className="flex-1 overflow-y-auto flex flex-col min-h-0">
+        {/* VIEWS */}
+        <SectionLabel>Views</SectionLabel>
         <ul>
           {primaryLinks.map((link) => {
             const isActive = pathname === link.href;
@@ -188,10 +201,10 @@ export default function Sidebar() {
               <li key={link.href}>
                 <Link
                   href={link.href}
-                  className={`group flex items-center gap-3 pr-5 py-2.5 text-[13px] font-heading font-medium border-l-2 transition-colors ${
+                  className={`group flex items-center gap-3 pl-[22px] pr-5 py-2.5 text-[13px] font-heading font-medium border-l-2 transition-colors ${
                     isActive
-                      ? "border-[#0099FF] bg-white/[0.03] text-white pl-[22px]"
-                      : "border-transparent text-slate-400 hover:bg-white/[0.02] hover:text-white pl-[22px]"
+                      ? "border-[#0099FF] bg-white/[0.03] text-white"
+                      : "border-transparent text-slate-400 hover:bg-white/[0.02] hover:text-white"
                   }`}
                 >
                   <span
@@ -211,10 +224,16 @@ export default function Sidebar() {
           })}
         </ul>
 
-        {/* System section — fleshes out the fake architecture */}
-        <div className="mt-7 mb-2 pl-[22px] pr-5 text-[9px] font-heading font-semibold tracking-[0.24em] text-white/30 uppercase">
-          System
-        </div>
+        {/* REMEDIATION CATALOG — only on /builder */}
+        {isBuilder && (
+          <>
+            <SectionLabel>Remediation Catalog</SectionLabel>
+            <RemediationCatalog />
+          </>
+        )}
+
+        {/* SYSTEM */}
+        <SectionLabel>System</SectionLabel>
         <ul>
           {systemLinks.map((link) => (
             <li key={link.label}>
@@ -229,10 +248,26 @@ export default function Sidebar() {
             </li>
           ))}
         </ul>
-      </nav>
+
+        {/* How this works — only on /builder, pushed to bottom of scroll */}
+        {isBuilder && (
+          <div className="mt-auto px-4 pt-5 pb-4">
+            <div className="rounded-lg bg-accent-blue/10 border border-accent-blue/20 p-4 text-sm text-white/85 leading-relaxed">
+              <div className="font-heading font-semibold text-white mb-1.5">
+                💡 How this works:
+              </div>
+              <p className="text-[13px]">
+                Order matters. Put your easiest fix first. I will run Step 1
+                and check if the gateway is back online. If it works, I stop.
+                If it fails, I automatically move to Step 2.
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* System Health widget */}
-      <div className="px-5 py-3 border-t border-white/5">
+      <div className="px-5 py-3 border-t border-white/5 shrink-0">
         <div className="flex items-center gap-2">
           <PulseDot color="emerald" />
           <span className="text-[10px] text-white/55 tracking-wide font-heading font-medium">
@@ -242,7 +277,7 @@ export default function Sidebar() {
       </div>
 
       {/* Version footer */}
-      <div className="px-5 py-3 border-t border-white/5 text-[10px] text-white/30 tracking-wide">
+      <div className="px-5 py-3 border-t border-white/5 text-[10px] text-white/30 tracking-wide shrink-0">
         v0.1.0 — Demo Build
       </div>
     </aside>

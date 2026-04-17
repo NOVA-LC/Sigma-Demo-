@@ -30,7 +30,7 @@ export default function RootLayout({
       </head>
       <body className="font-sans antialiased text-primary-navy">
         <Sidebar />
-        <main className="ml-64 min-h-screen bg-light-gray">
+        <main className="ml-80 min-h-screen bg-light-gray">
           <PageTransition>{children}</PageTransition>
         </main>
       </body>

@@ -1,22 +1,39 @@
 "use client";
 
-export default function PivotBanner() {
+type Props = {
+  visible: boolean;
+};
+
+/**
+ * Dark full-screen overlay with a single centered premium headline.
+ * Always mounted; fades in/out via CSS opacity so the transition text can
+ * gracefully disappear before the failure cascade starts.
+ */
+export default function PivotBanner({ visible }: Props) {
   return (
     <div
       role="status"
       aria-live="polite"
-      className="fixed inset-0 z-40 flex items-center justify-center pointer-events-none"
+      className={`fixed inset-0 z-40 flex items-center justify-center transition-opacity duration-500 ease-out ${
+        visible ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+      }`}
     >
-      <div className="pointer-events-auto animate-pivot-in rounded-2xl bg-gradient-to-br from-amber-500 to-amber-600 text-white px-8 py-6 shadow-[0_30px_80px_rgba(245,158,11,0.45)] border border-amber-300/60 max-w-lg text-center">
-        <div className="text-[11px] font-heading font-semibold tracking-[0.22em] uppercase text-amber-50/90 mb-2">
-          Unexpected condition
+      <div className="absolute inset-0 bg-black/80" />
+      <div
+        className={`relative text-center px-10 max-w-2xl transition-all duration-700 ease-out ${
+          visible
+            ? "opacity-100 scale-100 translate-y-0"
+            : "opacity-0 scale-95 translate-y-2"
+        }`}
+      >
+        <div className="text-[10px] font-heading font-semibold tracking-[0.32em] uppercase text-white/50 mb-4">
+          Simulation 2
         </div>
-        <div className="font-heading font-semibold text-xl leading-snug">
-          Wait… what if the server rack was physically unplugged?
-        </div>
-        <div className="text-sm text-amber-50/90 mt-3 font-mono flex items-center justify-center gap-2">
-          <span className="inline-block w-2 h-2 rounded-full bg-white animate-pulse" />
-          Simulating unrecoverable hardware failure...
+        <div
+          className="text-white text-3xl md:text-[38px] leading-[1.15] tracking-tight"
+          style={{ fontWeight: 300 }}
+        >
+          What if the server rack was physically unplugged?
         </div>
       </div>
     </div>
