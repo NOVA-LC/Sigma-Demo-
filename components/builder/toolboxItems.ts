@@ -81,8 +81,8 @@ export const NODE_ID_BY_ITEM: Record<string, string> = {
 };
 
 export const POSITION_BY_ITEM: Record<string, { x: number; y: number }> = {
-  "clear-gateway-cache": { x: 260, y: 180 },
-  "reboot-server": { x: 260, y: 320 },
+  "clear-gateway-cache": { x: 250, y: 200 },
+  "reboot-server": { x: 250, y: 350 },
 };
 
 export type TutorialStep =

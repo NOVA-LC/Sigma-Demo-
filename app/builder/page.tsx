@@ -21,7 +21,7 @@ import { useWorkflowStore } from "@/store/useWorkflowStore";
 const triggerNode: Node<WorkflowNodeData> = {
   id: TRIGGER_NODE_ID,
   type: "workflow",
-  position: { x: 260, y: 40 },
+  position: { x: 250, y: 50 },
   draggable: false,
   deletable: false,
   selectable: false,

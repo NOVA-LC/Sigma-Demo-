@@ -37,8 +37,9 @@ function PlaybookCanvasInner({ children }: Props) {
         panOnDrag={false}
         panOnScroll={false}
         preventScrolling={false}
-        fitView
-        fitViewOptions={{ padding: 0.5, minZoom: 0.5, maxZoom: 1 }}
+        // Top-left anchored viewport → flow coords map 1:1 to pixels, so the
+        // Trigger at (250, 50) lands exactly 50px from the top of the canvas.
+        defaultViewport={{ x: 0, y: 0, zoom: 1 }}
         proOptions={{ hideAttribution: true }}
         deleteKeyCode={null}
       >
@@ -49,6 +50,17 @@ function PlaybookCanvasInner({ children }: Props) {
           color="#94A3B8"
         />
       </ReactFlow>
+
+      {/* PLAYBOOK ORIGIN label — sits just above the Trigger node.
+          Node width is 240px; position.x=250; mid-point = 370px. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute font-heading font-semibold text-[9px] tracking-[0.28em] text-primary-navy/35 uppercase"
+        style={{ top: 28, left: 250, width: 240, textAlign: "center" }}
+      >
+        Playbook Origin
+      </div>
+
       {children}
     </div>
   );

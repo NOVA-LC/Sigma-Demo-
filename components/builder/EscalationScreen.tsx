@@ -1,5 +1,10 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+
+import { useWorkflowStore } from "@/store/useWorkflowStore";
+
 function SignalDots() {
   return (
     <span className="flex items-end gap-[2px]">
@@ -58,7 +63,112 @@ function LockGlyph() {
   );
 }
 
+/* ── Outro ──────────────────────────────────────────────────────────────── */
+
+const OUTRO_DELAY_MS = 6000;
+const FADE_OUT_MS = 700;
+
+function DemoCompleteOverlay({
+  visible,
+  onRestart,
+  onViewArchitecture,
+}: {
+  visible: boolean;
+  onRestart: () => void;
+  onViewArchitecture: () => void;
+}) {
+  return (
+    <div
+      className={`absolute inset-0 z-10 flex flex-col items-center justify-center px-10 text-center transition-opacity duration-700 ease-out ${
+        visible ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+      }`}
+    >
+      <div className="absolute inset-0 bg-black/80 backdrop-blur-md" />
+      <div
+        className={`relative max-w-2xl transition-all duration-700 ease-out ${
+          visible
+            ? "opacity-100 translate-y-0"
+            : "opacity-0 translate-y-4"
+        }`}
+      >
+        <div className="text-[10px] font-heading font-semibold tracking-[0.32em] uppercase text-white/50 mb-4">
+          Demo Complete
+        </div>
+        <h2
+          className="text-white text-3xl md:text-[40px] leading-[1.1] tracking-tight"
+          style={{ fontWeight: 300 }}
+        >
+          Scenario Complete
+        </h2>
+        <p className="text-white/70 text-[15px] md:text-base leading-relaxed mt-5 max-w-xl mx-auto">
+          Sigma handles the routine so you can handle the critical. From
+          autonomous triage to safe, human-guided escalation—this is the future
+          of infrastructure.
+        </p>
+
+        <div className="flex flex-wrap items-center justify-center gap-3 mt-8">
+          <button
+            type="button"
+            onClick={onRestart}
+            className="rounded-md bg-white text-primary-navy hover:bg-slate-100 transition-colors font-heading font-semibold text-[13px] px-5 py-2.5 shadow-[0_10px_30px_rgba(255,255,255,0.12)]"
+          >
+            Start Over
+          </button>
+          <button
+            type="button"
+            onClick={onViewArchitecture}
+            className="rounded-md border border-white/20 bg-white/5 hover:bg-white/10 text-white font-heading font-medium text-[13px] px-5 py-2.5 transition-colors"
+          >
+            View Architecture
+          </button>
+        </div>
+      </div>
+
+      <div className="absolute bottom-5 left-0 right-0 text-center text-[10px] tracking-[0.14em] text-white/35 font-heading font-medium">
+        Built for Sigma Automate by Tyler · Foundational AI &amp; Infrastructure
+      </div>
+    </div>
+  );
+}
+
 export default function EscalationScreen() {
+  const router = useRouter();
+  const resetAll = useWorkflowStore((s) => s.resetAll);
+  const resetTutorial = useWorkflowStore((s) => s.resetTutorial);
+  const setPhase = useWorkflowStore((s) => s.setPhase);
+
+  const [outroVisible, setOutroVisible] = useState(false);
+  const [archToast, setArchToast] = useState<string | null>(null);
+  const [fadingOut, setFadingOut] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setOutroVisible(true), OUTRO_DELAY_MS);
+    return () => clearTimeout(t);
+  }, []);
+
+  useEffect(() => {
+    if (!archToast) return;
+    const t = setTimeout(() => setArchToast(null), 3500);
+    return () => clearTimeout(t);
+  }, [archToast]);
+
+  const handleRestart = () => {
+    setFadingOut(true);
+    // Wipe store state immediately so the next scene mounts clean.
+    resetAll();
+    resetTutorial();
+    setPhase("waiting-for-permission");
+    setTimeout(() => {
+      router.push("/");
+    }, FADE_OUT_MS);
+  };
+
+  const handleViewArchitecture = () => {
+    setArchToast(
+      "Repo → github.com/NOVA-LC/Sigma-Demo-   (architecture docs coming soon)",
+    );
+  };
+
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center animate-fade-to-black">
       {/* Dim-to-black backdrop */}
@@ -180,6 +290,29 @@ export default function EscalationScreen() {
           <div className="w-[120px] h-[5px] rounded-full bg-white/55" />
         </div>
       </div>
+
+      {/* Outro overlay */}
+      <DemoCompleteOverlay
+        visible={outroVisible}
+        onRestart={handleRestart}
+        onViewArchitecture={handleViewArchitecture}
+      />
+
+      {/* Architecture toast */}
+      {archToast && (
+        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[75] animate-page-in">
+          <div className="rounded-full bg-white text-primary-navy px-5 py-2.5 text-[12px] font-heading font-medium shadow-[0_12px_40px_rgba(0,0,0,0.45)] border border-white/20">
+            {archToast}
+          </div>
+        </div>
+      )}
+
+      {/* Fade-to-black transition before navigating to /triage */}
+      <div
+        className={`fixed inset-0 z-[80] bg-black transition-opacity ease-in-out pointer-events-none ${
+          fadingOut ? "opacity-100 duration-500" : "opacity-0 duration-200"
+        }`}
+      />
     </div>
   );
 }
