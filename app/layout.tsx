@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
 import "./globals.css";
 
+import Sidebar from "@/components/Sidebar";
+import PageTransition from "@/components/PageTransition";
+
 export const metadata: Metadata = {
   title: "SIGMA Automate",
-  description: "Workflow orchestration platform",
+  description: "Autonomous operations and workflow orchestration platform",
 };
 
 export default function RootLayout({
@@ -25,7 +28,12 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className="font-sans antialiased">{children}</body>
+      <body className="font-sans antialiased text-primary-navy">
+        <Sidebar />
+        <main className="ml-64 min-h-screen bg-light-gray">
+          <PageTransition>{children}</PageTransition>
+        </main>
+      </body>
     </html>
   );
 }
