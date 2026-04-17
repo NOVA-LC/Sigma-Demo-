@@ -288,17 +288,17 @@ export default function PlaybookBuilderPage() {
   return (
     <div className="flex flex-col h-screen">
       <BuilderHeader>
-        <div className="flex items-center justify-between gap-6">
-          <div>
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div className="min-w-0">
             <p className="text-[11px] font-heading font-semibold tracking-[0.18em] text-primary-navy/60 uppercase mb-1">
               Builder
             </p>
-            <h1 className="font-heading font-semibold text-2xl text-primary-navy">
+            <h1 className="font-heading font-semibold text-xl sm:text-2xl text-primary-navy truncate">
               Playbook Builder
             </h1>
           </div>
 
-          <div className="flex items-center gap-3.5">
+          <div className="flex items-center gap-3 flex-wrap">
             {tutorialConfig.highlightDeploy && deployState === "idle" && (
               <div
                 role="tooltip"

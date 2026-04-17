@@ -180,7 +180,7 @@ export default function TriageDashboardPage() {
     <div className="min-h-screen bg-primary-navy text-white relative overflow-hidden">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(0,153,255,0.12),_transparent_60%)]" />
 
-      <div className="relative px-10 py-8">
+      <div className="relative pl-16 md:pl-6 lg:pl-10 pr-4 sm:pr-6 lg:pr-10 py-6 sm:py-8">
         <header className="mb-6 flex items-end justify-between">
           <div>
             <p className="text-[11px] font-heading font-semibold tracking-[0.2em] text-light-gray/70 uppercase mb-1.5">
@@ -196,9 +196,9 @@ export default function TriageDashboardPage() {
           </div>
         </header>
 
-        <div className="grid grid-cols-12 gap-6 items-stretch">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 items-stretch">
           {/* Live Chat */}
-          <section className="col-span-12 lg:col-span-5 rounded-xl border border-white/10 bg-secondary-dark/70 backdrop-blur shadow-lg flex flex-col h-[560px]">
+          <section className="col-span-12 lg:col-span-5 rounded-xl border border-white/10 bg-secondary-dark/70 backdrop-blur shadow-lg flex flex-col h-[480px] sm:h-[520px] xl:h-[560px]">
             <div className="flex items-center gap-2 px-4 py-3 border-b border-white/5">
               <span className="w-2 h-2 rounded-full bg-emerald-400" />
               <span className="font-heading font-semibold text-[11px] tracking-[0.16em] text-light-gray uppercase">
@@ -229,7 +229,7 @@ export default function TriageDashboardPage() {
           </section>
 
           {/* Terminal */}
-          <section className="col-span-12 lg:col-span-7 h-[560px]">
+          <section className="col-span-12 lg:col-span-7 h-[480px] sm:h-[520px] xl:h-[560px]">
             {terminalOpen ? (
               <div className="h-full animate-slide-in-right">
                 <LogTerminal

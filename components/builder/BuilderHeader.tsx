@@ -19,11 +19,15 @@ type Props = {
 export default function BuilderHeader({ children }: Props) {
   return (
     <header className="bg-white border-b border-slate-200">
-      <div className="px-8 py-2.5 border-b border-slate-100">
+      <div className="pl-16 md:pl-6 lg:pl-8 pr-4 sm:pr-6 lg:pr-8 py-2.5 border-b border-slate-100 overflow-x-auto">
         <StatusBreadcrumbs />
       </div>
 
-      {children && <div className="px-8 py-4">{children}</div>}
+      {children && (
+        <div className="pl-16 md:pl-6 lg:pl-8 pr-4 sm:pr-6 lg:pr-8 py-4">
+          {children}
+        </div>
+      )}
     </header>
   );
 }

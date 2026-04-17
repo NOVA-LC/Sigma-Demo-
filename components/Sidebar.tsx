@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import RemediationCatalog from "@/components/RemediationCatalog";
 
@@ -100,6 +100,38 @@ function GearIcon() {
   );
 }
 
+function MenuIcon() {
+  return (
+    <svg
+      aria-hidden
+      viewBox="0 0 16 16"
+      className="w-4 h-4"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+    >
+      <path d="M2.5 4h11M2.5 8h11M2.5 12h11" />
+    </svg>
+  );
+}
+
+function CloseIcon() {
+  return (
+    <svg
+      aria-hidden
+      viewBox="0 0 16 16"
+      className="w-4 h-4"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+    >
+      <path d="m3.5 3.5 9 9M12.5 3.5l-9 9" />
+    </svg>
+  );
+}
+
 /* ── Pulse dot ──────────────────────────────────────────────────────────── */
 
 type DotColor = "red" | "blue" | "emerald";
@@ -149,8 +181,6 @@ const systemLinks: { label: string; icon: ReactNode }[] = [
   { label: "Settings", icon: <GearIcon /> },
 ];
 
-/* ── Section label ──────────────────────────────────────────────────────── */
-
 function SectionLabel({ children }: { children: ReactNode }) {
   return (
     <div className="px-[22px] pt-4 pb-1.5 text-[9px] font-heading font-semibold tracking-[0.24em] text-white/30 uppercase">
@@ -165,115 +195,168 @@ export default function Sidebar() {
   const pathname = usePathname();
   const isBuilder = pathname === "/builder";
 
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  // Close drawer on route change.
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
+
+  // Prevent body scroll when the mobile drawer is open.
+  useEffect(() => {
+    if (mobileOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [mobileOpen]);
+
   return (
-    <aside className="fixed inset-y-0 left-0 w-80 bg-primary-navy text-white flex flex-col">
-      {/* Brand */}
-      <div className="px-5 py-5 border-b border-white/5 shrink-0">
-        <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-md bg-gradient-to-br from-[#33ADFF] to-[#0077CC] flex items-center justify-center text-white font-heading font-bold text-sm shadow-[0_2px_8px_rgba(0,153,255,0.35)]">
-            σ
-          </div>
-          <div className="min-w-0">
-            <h1 className="font-heading font-bold text-[14px] tracking-[0.08em] text-white leading-tight">
-              SIGMA AUTOMATE
-            </h1>
-            <p className="text-[9px] text-white/40 tracking-[0.22em] uppercase mt-0.5">
-              Autonomous Operations
-            </p>
-          </div>
-        </div>
-      </div>
+    <>
+      {/* Mobile hamburger — only below md */}
+      <button
+        type="button"
+        aria-label="Open navigation"
+        onClick={() => setMobileOpen(true)}
+        className={`md:hidden fixed top-3 left-3 z-[60] w-9 h-9 rounded-md bg-primary-navy text-white flex items-center justify-center border border-white/10 shadow-lg transition-opacity ${
+          mobileOpen ? "opacity-0 pointer-events-none" : "opacity-100"
+        }`}
+      >
+        <MenuIcon />
+      </button>
 
-      {/* Scrollable body */}
-      <div className="flex-1 overflow-y-auto flex flex-col min-h-0">
-        {/* VIEWS */}
-        <SectionLabel>Views</SectionLabel>
-        <ul>
-          {primaryLinks.map((link) => {
-            const isActive = pathname === link.href;
+      {/* Mobile backdrop */}
+      <div
+        aria-hidden
+        onClick={() => setMobileOpen(false)}
+        className={`md:hidden fixed inset-0 z-[55] bg-black/60 backdrop-blur-sm transition-opacity duration-300 ${
+          mobileOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+        }`}
+      />
 
-            return (
-              <li key={link.href}>
-                <Link
-                  href={link.href}
-                  className={`group flex items-center gap-3 pl-[22px] pr-5 py-2.5 text-[13px] font-heading font-medium border-l-2 transition-colors ${
-                    isActive
-                      ? "border-[#0099FF] bg-white/[0.03] text-white"
-                      : "border-transparent text-slate-400 hover:bg-white/[0.02] hover:text-white"
-                  }`}
-                >
-                  <span
-                    className={
-                      isActive
-                        ? "text-[#0099FF]"
-                        : "text-slate-500 group-hover:text-slate-300 transition-colors"
-                    }
-                  >
-                    {link.icon}
-                  </span>
-                  <span className="flex-1 truncate">{link.label}</span>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-
-        {/* REMEDIATION CATALOG — only on /builder */}
-        {isBuilder && (
-          <>
-            <SectionLabel>Remediation Catalog</SectionLabel>
-            <RemediationCatalog />
-          </>
-        )}
-
-        {/* SYSTEM */}
-        <SectionLabel>System</SectionLabel>
-        <ul>
-          {systemLinks.map((link) => (
-            <li key={link.label}>
-              <div
-                className="flex items-center gap-3 pl-[22px] pr-5 py-2 text-[13px] font-heading font-medium border-l-2 border-transparent text-slate-500/80 cursor-not-allowed select-none"
-                aria-disabled
-                title="Coming soon"
-              >
-                <span className="text-slate-600">{link.icon}</span>
-                <span className="flex-1 truncate">{link.label}</span>
-              </div>
-            </li>
-          ))}
-        </ul>
-
-        {/* How this works — only on /builder, pushed to bottom of scroll */}
-        {isBuilder && (
-          <div className="mt-auto px-4 pt-5 pb-4">
-            <div className="rounded-lg bg-accent-blue/10 border border-accent-blue/20 p-4 text-sm text-white/85 leading-relaxed">
-              <div className="font-heading font-semibold text-white mb-1.5">
-                💡 How this works:
-              </div>
-              <p className="text-[13px]">
-                Order matters. Put your easiest fix first. I will run Step 1
-                and check if the gateway is back online. If it works, I stop.
-                If it fails, I automatically move to Step 2.
+      <aside
+        className={`fixed inset-y-0 left-0 z-[56] bg-primary-navy text-white flex flex-col
+          w-[86vw] max-w-[320px] sm:w-72
+          md:translate-x-0 md:w-60 lg:w-64 xl:w-72 2xl:w-80
+          transition-transform duration-300 ease-out
+          ${mobileOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full md:translate-x-0"}
+        `}
+      >
+        {/* Brand + mobile close */}
+        <div className="px-5 py-5 border-b border-white/5 shrink-0 flex items-start justify-between gap-3">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-7 h-7 shrink-0 rounded-md bg-gradient-to-br from-[#33ADFF] to-[#0077CC] flex items-center justify-center text-white font-heading font-bold text-sm shadow-[0_2px_8px_rgba(0,153,255,0.35)]">
+              σ
+            </div>
+            <div className="min-w-0">
+              <h1 className="font-heading font-bold text-[14px] tracking-[0.08em] text-white leading-tight truncate">
+                SIGMA AUTOMATE
+              </h1>
+              <p className="text-[9px] text-white/40 tracking-[0.22em] uppercase mt-0.5 truncate">
+                Autonomous Operations
               </p>
             </div>
           </div>
-        )}
-      </div>
 
-      {/* System Health widget */}
-      <div className="px-5 py-3 border-t border-white/5 shrink-0">
-        <div className="flex items-center gap-2">
-          <PulseDot color="emerald" />
-          <span className="text-[10px] text-white/55 tracking-wide font-heading font-medium">
-            SIGMA Online &amp; Monitoring
-          </span>
+          {/* Mobile-only close button */}
+          <button
+            type="button"
+            aria-label="Close navigation"
+            onClick={() => setMobileOpen(false)}
+            className="md:hidden w-8 h-8 shrink-0 rounded-md text-white/70 hover:text-white hover:bg-white/5 flex items-center justify-center"
+          >
+            <CloseIcon />
+          </button>
         </div>
-      </div>
 
-      {/* Version footer */}
-      <div className="px-5 py-3 border-t border-white/5 text-[10px] text-white/30 tracking-wide shrink-0">
-        v0.1.0 — Demo Build
-      </div>
-    </aside>
+        {/* Scrollable body */}
+        <div className="flex-1 overflow-y-auto flex flex-col min-h-0">
+          <SectionLabel>Views</SectionLabel>
+          <ul>
+            {primaryLinks.map((link) => {
+              const isActive = pathname === link.href;
+
+              return (
+                <li key={link.href}>
+                  <Link
+                    href={link.href}
+                    className={`group flex items-center gap-3 pl-[22px] pr-5 py-2.5 text-[13px] font-heading font-medium border-l-2 transition-colors ${
+                      isActive
+                        ? "border-[#0099FF] bg-white/[0.03] text-white"
+                        : "border-transparent text-slate-400 hover:bg-white/[0.02] hover:text-white"
+                    }`}
+                  >
+                    <span
+                      className={
+                        isActive
+                          ? "text-[#0099FF]"
+                          : "text-slate-500 group-hover:text-slate-300 transition-colors"
+                      }
+                    >
+                      {link.icon}
+                    </span>
+                    <span className="flex-1 truncate">{link.label}</span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+
+          {isBuilder && (
+            <>
+              <SectionLabel>Remediation Catalog</SectionLabel>
+              <RemediationCatalog />
+            </>
+          )}
+
+          <SectionLabel>System</SectionLabel>
+          <ul>
+            {systemLinks.map((link) => (
+              <li key={link.label}>
+                <div
+                  className="flex items-center gap-3 pl-[22px] pr-5 py-2 text-[13px] font-heading font-medium border-l-2 border-transparent text-slate-500/80 cursor-not-allowed select-none"
+                  aria-disabled
+                  title="Coming soon"
+                >
+                  <span className="text-slate-600">{link.icon}</span>
+                  <span className="flex-1 truncate">{link.label}</span>
+                </div>
+              </li>
+            ))}
+          </ul>
+
+          {isBuilder && (
+            <div className="mt-auto px-4 pt-5 pb-4">
+              <div className="rounded-lg bg-accent-blue/10 border border-accent-blue/20 p-3.5 text-[13px] text-white/85 leading-relaxed">
+                <div className="font-heading font-semibold text-white mb-1.5">
+                  💡 How this works:
+                </div>
+                <p>
+                  Order matters. Put your easiest fix first. I will run Step 1
+                  and check if the gateway is back online. If it works, I stop.
+                  If it fails, I automatically move to Step 2.
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="px-5 py-3 border-t border-white/5 shrink-0">
+          <div className="flex items-center gap-2">
+            <PulseDot color="emerald" />
+            <span className="text-[10px] text-white/55 tracking-wide font-heading font-medium truncate">
+              SIGMA Online &amp; Monitoring
+            </span>
+          </div>
+        </div>
+
+        <div className="px-5 py-3 border-t border-white/5 text-[10px] text-white/30 tracking-wide shrink-0">
+          v0.1.0 — Demo Build
+        </div>
+      </aside>
+    </>
   );
 }
