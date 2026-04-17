@@ -3,17 +3,18 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Edge, Node } from "reactflow";
 
+import BuilderHeader from "@/components/builder/BuilderHeader";
 import PlaybookCanvas from "@/components/builder/PlaybookCanvas";
 import Toolbox from "@/components/builder/Toolbox";
 import WelcomeModal from "@/components/builder/WelcomeModal";
-import ResolutionPanel from "@/components/builder/ResolutionPanel";
 import Toast from "@/components/builder/Toast";
-import SimulationToggle from "@/components/builder/SimulationToggle";
 import EscalationScreen from "@/components/builder/EscalationScreen";
+import MemorizationBanner from "@/components/builder/MemorizationBanner";
 import {
   TRIGGER_BORDER_COLOR,
   TRIGGER_NODE_ID,
-  toolboxItems,
+  itemsById,
+  type CategoryId,
 } from "@/components/builder/toolboxItems";
 import type { WorkflowNodeData } from "@/components/builder/WorkflowNode";
 import { useWorkflowStore } from "@/store/useWorkflowStore";
@@ -29,34 +30,40 @@ type TutorialStep =
   | "done";
 
 type TutorialConfig = {
-  toolboxActiveId: string | null;
+  activeCategoryId: CategoryId | null;
+  activeItemId: string | null;
   tooltip: string | null;
   highlightDeploy: boolean;
 };
 
 const tutorialByStep: Record<TutorialStep, TutorialConfig> = {
   "add-clear-cache": {
-    toolboxActiveId: "clear-gateway-cache",
-    tooltip: "Click to add first attempt",
+    activeCategoryId: "network",
+    activeItemId: "clear-gateway-cache",
+    tooltip: "Fastest low-risk attempt.",
     highlightDeploy: false,
   },
   "add-reboot": {
-    toolboxActiveId: "reboot-server",
-    tooltip: "Click to add fallback",
+    activeCategoryId: "hardware",
+    activeItemId: "reboot-server",
+    tooltip: "Fallback if cache fails.",
     highlightDeploy: false,
   },
   deploy: {
-    toolboxActiveId: null,
+    activeCategoryId: null,
+    activeItemId: null,
     tooltip: null,
     highlightDeploy: true,
   },
   running: {
-    toolboxActiveId: null,
+    activeCategoryId: null,
+    activeItemId: null,
     tooltip: null,
     highlightDeploy: false,
   },
   done: {
-    toolboxActiveId: null,
+    activeCategoryId: null,
+    activeItemId: null,
     tooltip: null,
     highlightDeploy: false,
   },
@@ -87,8 +94,14 @@ const triggerNode: Node<WorkflowNodeData> = {
   },
 };
 
-// Success & failure timings (unchanged from previous iteration)
-const SUCCESS = { edge: 1000, node: 2500, panel: 3500, toast: 8000 };
+// Success timings (cascade across all connected nodes)
+const SUCCESS = {
+  edgeAfter: 500,
+  nodeAfter: 1400,
+  stepDuration: 1500,
+  memorizationDelay: 500, // after the final node turns green
+};
+
 const FAIL = {
   edgeAfter: 700,
   nodeAfter: 1900,
@@ -123,10 +136,9 @@ type DeployState = "idle" | "executing" | "deployed" | "failed";
 export default function PlaybookBuilderPage() {
   const [showWelcome, setShowWelcome] = useState(true);
   const [deployState, setDeployState] = useState<DeployState>("idle");
-  const [resolutionOpen, setResolutionOpen] = useState(false);
   const [toastVisible, setToastVisible] = useState(false);
-  const [simulateFailure, setSimulateFailure] = useState(false);
   const [escalationOpen, setEscalationOpen] = useState(false);
+  const [memorizationShown, setMemorizationShown] = useState(false);
   const [tutorialStep, setTutorialStep] =
     useState<TutorialStep>("add-clear-cache");
   const [completedItemIds, setCompletedItemIds] = useState<string[]>([]);
@@ -135,6 +147,8 @@ export default function PlaybookBuilderPage() {
   const edges = useWorkflowStore((s) => s.edges);
   const setNodes = useWorkflowStore((s) => s.setNodes);
   const setEdges = useWorkflowStore((s) => s.setEdges);
+  const simulateFailure = useWorkflowStore((s) => s.isFailureSimulated);
+  const setPhase = useWorkflowStore((s) => s.setPhase);
 
   const timeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
@@ -143,13 +157,14 @@ export default function PlaybookBuilderPage() {
     setNodes([triggerNode]);
     setEdges([]);
     setDeployState("idle");
-    setResolutionOpen(false);
     setToastVisible(false);
     setEscalationOpen(false);
+    setMemorizationShown(false);
     setTutorialStep("add-clear-cache");
     setCompletedItemIds([]);
+    setPhase("waiting-for-permission");
     return () => timeoutsRef.current.forEach(clearTimeout);
-  }, [setNodes, setEdges]);
+  }, [setNodes, setEdges, setPhase]);
 
   const tutorialConfig = tutorialByStep[tutorialStep];
 
@@ -159,7 +174,7 @@ export default function PlaybookBuilderPage() {
 
   const handleToolboxSelect = useCallback(
     (itemId: string) => {
-      const item = toolboxItems.find((i) => i.id === itemId);
+      const item = itemsById[itemId];
       if (!item) return;
 
       const nodeId = NODE_ID_BY_ITEM[itemId];
@@ -217,48 +232,64 @@ export default function PlaybookBuilderPage() {
 
   const runSuccessSequence = useCallback(() => {
     const s0 = useWorkflowStore.getState();
-    const first = s0.edges.find((e) => e.source === TRIGGER_NODE_ID);
-    if (!first) return;
-    const targetNodeId = first.target;
+    const path = walkFromTrigger(s0.nodes, s0.edges);
+    if (path.length === 0) return;
 
+    path.forEach((step, idx) => {
+      const base = idx * SUCCESS.stepDuration;
+      const isLast = idx === path.length - 1;
+
+      // Edge turns solid accent blue
+      push(() => {
+        const s = useWorkflowStore.getState();
+        s.setEdges(
+          s.edges.map((e) =>
+            e.id === step.edgeId
+              ? {
+                  ...e,
+                  animated: false,
+                  style: { stroke: "#0099FF", strokeWidth: 3 },
+                }
+              : e,
+          ),
+        );
+      }, base + SUCCESS.edgeAfter);
+
+      // Node turns green + Success badge. The LAST node also fires the toast
+      // and flips the deploy button in the same tick.
+      push(() => {
+        const s = useWorkflowStore.getState();
+        s.setNodes(
+          s.nodes.map((n) =>
+            n.id === step.nodeId
+              ? {
+                  ...n,
+                  data: {
+                    ...(n.data as WorkflowNodeData),
+                    borderColor: "#10B981",
+                    success: true,
+                  },
+                }
+              : n,
+          ),
+        );
+        if (isLast) {
+          setToastVisible(true);
+          setDeployState("deployed");
+          setTutorialStep("done");
+        }
+      }, base + SUCCESS.nodeAfter);
+    });
+
+    const finalAt = (path.length - 1) * SUCCESS.stepDuration + SUCCESS.nodeAfter;
+
+    // Memorization banner drops slightly after the toast for a staged reveal,
+    // and the global breadcrumb advances to "Resolved & Memorized".
     push(() => {
-      const s = useWorkflowStore.getState();
-      s.setEdges(
-        s.edges.map((e) =>
-          e.id === first.id
-            ? {
-                ...e,
-                animated: false,
-                style: { stroke: "#0099FF", strokeWidth: 3 },
-              }
-            : e,
-        ),
-      );
-    }, SUCCESS.edge);
-
-    push(() => {
-      const s = useWorkflowStore.getState();
-      s.setNodes(
-        s.nodes.map((n) =>
-          n.id === targetNodeId
-            ? {
-                ...n,
-                data: {
-                  ...(n.data as WorkflowNodeData),
-                  borderColor: "#10B981",
-                  success: true,
-                },
-              }
-            : n,
-        ),
-      );
-      setDeployState("deployed");
-      setTutorialStep("done");
-    }, SUCCESS.node);
-
-    push(() => setResolutionOpen(true), SUCCESS.panel);
-    push(() => setToastVisible(true), SUCCESS.toast);
-  }, []);
+      setMemorizationShown(true);
+      setPhase("resolved");
+    }, finalAt + SUCCESS.memorizationDelay);
+  }, [setPhase]);
 
   const runFailureSequence = useCallback(() => {
     const s0 = useWorkflowStore.getState();
@@ -317,6 +348,7 @@ export default function PlaybookBuilderPage() {
 
     setDeployState("executing");
     setTutorialStep("running");
+    setPhase("executing");
 
     if (simulateFailure) {
       runFailureSequence();
@@ -329,29 +361,25 @@ export default function PlaybookBuilderPage() {
     simulateFailure,
     runSuccessSequence,
     runFailureSequence,
+    setPhase,
   ]);
 
   const deployDisabled = !hasSolutionConnected || deployState !== "idle";
 
   return (
     <div className="flex flex-col min-h-screen">
-      {/* Top bar */}
-      <header className="flex items-center justify-between px-8 py-5 bg-white border-b border-slate-200 gap-6">
-        <div>
-          <p className="text-[11px] font-heading font-semibold tracking-[0.18em] text-primary-navy/60 uppercase mb-1">
-            Builder
-          </p>
-          <h1 className="font-heading font-semibold text-2xl text-primary-navy">
-            Playbook Builder
-          </h1>
-        </div>
-
-        <div className="flex items-center gap-5">
-          <SimulationToggle
-            checked={simulateFailure}
-            onChange={setSimulateFailure}
-            disabled={deployState !== "idle"}
-          />
+      {/* Global header: breadcrumbs + demo toggle, with a local sub-row for
+          the page title and the Deploy Guardrails action. */}
+      <BuilderHeader toggleDisabled={deployState !== "idle"}>
+        <div className="flex items-center justify-between gap-6">
+          <div>
+            <p className="text-[11px] font-heading font-semibold tracking-[0.18em] text-primary-navy/60 uppercase mb-1">
+              Builder
+            </p>
+            <h1 className="font-heading font-semibold text-2xl text-primary-navy">
+              Playbook Builder
+            </h1>
+          </div>
 
           <button
             type="button"
@@ -378,31 +406,32 @@ export default function PlaybookBuilderPage() {
             {deployState === "failed" && <span>✕</span>}
             <span>
               {deployState === "idle"
-                ? "Deploy Guardrails"
+                ? "Execute Playbook"
                 : deployState === "executing"
                   ? "Executing..."
                   : deployState === "deployed"
-                    ? "Deployed"
+                    ? "Executed"
                     : "Failed"}
             </span>
           </button>
         </div>
-      </header>
+      </BuilderHeader>
 
       {/* Split layout */}
       <div className="flex flex-1 overflow-hidden">
         <Toolbox
-          activeItemId={tutorialConfig.toolboxActiveId}
+          activeCategoryId={tutorialConfig.activeCategoryId}
+          activeItemId={tutorialConfig.activeItemId}
           tooltip={tutorialConfig.tooltip}
           completedItemIds={completedItemIds}
           onSelect={handleToolboxSelect}
         />
-        <PlaybookCanvas />
+        <PlaybookCanvas>
+          {memorizationShown && <MemorizationBanner />}
+        </PlaybookCanvas>
       </div>
 
       {showWelcome && <WelcomeModal onDismiss={() => setShowWelcome(false)} />}
-
-      {resolutionOpen && <ResolutionPanel />}
 
       <Toast
         visible={toastVisible}

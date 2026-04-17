@@ -10,6 +10,13 @@ import {
   type NodeChange,
 } from "reactflow";
 
+export type Phase =
+  | "watching"
+  | "investigating"
+  | "waiting-for-permission"
+  | "executing"
+  | "resolved";
+
 type WorkflowState = {
   // React Flow state
   nodes: Node[];
@@ -18,6 +25,10 @@ type WorkflowState = {
   // Execution state
   isRunning: boolean;
   logs: string[];
+
+  // Global header state
+  phase: Phase;
+  isFailureSimulated: boolean;
 
   // Actions required by spec
   setNodes: (nodes: Node[]) => void;
@@ -36,6 +47,10 @@ type WorkflowState = {
   clearLogs: () => void;
   resetBorders: () => void;
   resetAll: () => void;
+
+  // Header state setters
+  setPhase: (phase: Phase) => void;
+  setIsFailureSimulated: (value: boolean) => void;
 };
 
 const defaultEdgeOptions = {
@@ -48,6 +63,8 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
   edges: [],
   isRunning: false,
   logs: [],
+  phase: "waiting-for-permission",
+  isFailureSimulated: false,
 
   setNodes: (nodes) => set({ nodes }),
   setEdges: (edges) => set({ edges }),
@@ -84,4 +101,7 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
       logs: [],
       isRunning: false,
     }),
+
+  setPhase: (phase) => set({ phase }),
+  setIsFailureSimulated: (isFailureSimulated) => set({ isFailureSimulated }),
 }));

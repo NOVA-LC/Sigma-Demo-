@@ -1,22 +1,30 @@
 "use client";
 
+import { useWorkflowStore } from "@/store/useWorkflowStore";
+
 type Props = {
-  checked: boolean;
-  onChange: (value: boolean) => void;
   disabled?: boolean;
 };
 
-export default function SimulationToggle({ checked, onChange, disabled }: Props) {
+export default function SimulationToggle({ disabled }: Props) {
+  const checked = useWorkflowStore((s) => s.isFailureSimulated);
+  const setChecked = useWorkflowStore((s) => s.setIsFailureSimulated);
+
   return (
     <label
-      className={`flex items-center gap-2.5 text-[11px] font-heading font-medium text-primary-navy/70 select-none ${
+      className={`flex items-center gap-3 select-none ${
         disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
       }`}
     >
-      <span className="tracking-wide uppercase text-[10px] text-primary-navy/50">
-        Demo
-      </span>
-      <span className="text-primary-navy/80">Simulate Hardware Failure</span>
+      <div className="text-right">
+        <div className="text-[11px] font-heading font-semibold text-primary-navy/80 leading-tight">
+          Simulate Hardware Failure
+        </div>
+        <div className="text-[9px] font-heading font-medium tracking-[0.14em] text-primary-navy/45 uppercase mt-0.5">
+          Toggle for escalation demo
+        </div>
+      </div>
+
       <span
         className={`relative inline-flex w-9 h-5 rounded-full transition-colors ${
           checked ? "bg-red-500" : "bg-slate-300"
@@ -33,7 +41,7 @@ export default function SimulationToggle({ checked, onChange, disabled }: Props)
         className="sr-only"
         checked={checked}
         disabled={disabled}
-        onChange={(e) => onChange(e.target.checked)}
+        onChange={(e) => setChecked(e.target.checked)}
       />
     </label>
   );

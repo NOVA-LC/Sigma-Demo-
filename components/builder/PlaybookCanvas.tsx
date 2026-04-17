@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, type ReactNode } from "react";
 import ReactFlow, {
   Background,
   BackgroundVariant,
@@ -12,7 +12,11 @@ import "reactflow/dist/style.css";
 import { useWorkflowStore } from "@/store/useWorkflowStore";
 import WorkflowNode from "./WorkflowNode";
 
-function PlaybookCanvasInner() {
+type Props = {
+  children?: ReactNode; // overlay slot (e.g. memorization banner)
+};
+
+function PlaybookCanvasInner({ children }: Props) {
   const nodes = useWorkflowStore((s) => s.nodes);
   const edges = useWorkflowStore((s) => s.edges);
   const onNodesChange = useWorkflowStore((s) => s.onNodesChange);
@@ -42,14 +46,15 @@ function PlaybookCanvasInner() {
         />
         <Controls showInteractive={false} />
       </ReactFlow>
+      {children}
     </div>
   );
 }
 
-export default function PlaybookCanvas() {
+export default function PlaybookCanvas({ children }: Props) {
   return (
     <ReactFlowProvider>
-      <PlaybookCanvasInner />
+      <PlaybookCanvasInner>{children}</PlaybookCanvasInner>
     </ReactFlowProvider>
   );
 }
