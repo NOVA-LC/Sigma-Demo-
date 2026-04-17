@@ -128,8 +128,6 @@ type PrimaryLink = {
   href: string;
   label: string;
   icon: ReactNode;
-  persistentDot?: DotColor;
-  activeDot?: DotColor;
 };
 
 const primaryLinks: PrimaryLink[] = [
@@ -137,13 +135,11 @@ const primaryLinks: PrimaryLink[] = [
     href: "/",
     label: "AI Triage Dashboard",
     icon: <RadarIcon />,
-    persistentDot: "red",
   },
   {
     href: "/builder",
     label: "Playbook Builder",
     icon: <WrenchIcon />,
-    activeDot: "blue",
   },
 ];
 
@@ -195,7 +191,6 @@ export default function Sidebar() {
         <ul>
           {primaryLinks.map((link) => {
             const isActive = pathname === link.href;
-            const dot = link.persistentDot ?? (isActive ? link.activeDot : null);
 
             return (
               <li key={link.href}>
@@ -217,7 +212,6 @@ export default function Sidebar() {
                     {link.icon}
                   </span>
                   <span className="flex-1 truncate">{link.label}</span>
-                  {dot && <PulseDot color={dot} />}
                 </Link>
               </li>
             );
@@ -271,7 +265,7 @@ export default function Sidebar() {
         <div className="flex items-center gap-2">
           <PulseDot color="emerald" />
           <span className="text-[10px] text-white/55 tracking-wide font-heading font-medium">
-            Agents Online &amp; Monitoring
+            SIGMA Online &amp; Monitoring
           </span>
         </div>
       </div>
