@@ -304,8 +304,8 @@ export default function PlaybookBuilderPage() {
                 role="tooltip"
                 className="relative animate-page-in animate-tooltip-bob"
               >
-                <div className="rounded-md bg-slate-900 text-white font-heading font-medium text-[12px] px-3 py-1.5 shadow-[0_8px_20px_rgba(15,23,42,0.35)] whitespace-nowrap">
-                  Guardrails set. Run the playbook.
+                <div className="rounded-md bg-slate-900 text-white font-heading font-semibold text-[12px] px-3 py-1.5 shadow-[0_8px_20px_rgba(15,23,42,0.45)] whitespace-nowrap border border-white/5">
+                  System ready. Execute the playbook now.
                 </div>
                 <span
                   aria-hidden
@@ -320,7 +320,7 @@ export default function PlaybookBuilderPage() {
               disabled={deployDisabled}
               className={`font-heading font-semibold text-[13px] px-4 py-2 rounded-md transition-all inline-flex items-center gap-2 ${
                 deployState === "idle" && tutorialReady
-                  ? "bg-primary-navy hover:bg-[#002a47] text-white cursor-pointer animate-cta-pulse"
+                  ? "bg-primary-navy hover:bg-[#002a47] text-white cursor-pointer animate-cta-pulse shadow-[0_0_20px_rgba(0,153,255,0.5)]"
                   : deployState === "executing"
                     ? "bg-primary-navy text-white/90 cursor-wait"
                     : deployState === "deployed"

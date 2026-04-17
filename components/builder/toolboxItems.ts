@@ -95,6 +95,11 @@ export type TutorialStep =
 export type TutorialConfig = {
   activeCategoryId: CategoryId | null;
   activeItemId: string | null;
+  /** Ghost tooltip when the category is collapsed. */
+  categoryPrompt: string | null;
+  /** Ghost tooltip when the category is expanded → points at the item. */
+  itemPrompt: string | null;
+  /** Caption shown under the item row (kept for inline context). */
   tooltip: string | null;
   highlightDeploy: boolean;
 };
@@ -103,30 +108,40 @@ export const tutorialByStep: Record<TutorialStep, TutorialConfig> = {
   "add-clear-cache": {
     activeCategoryId: "network",
     activeItemId: "clear-gateway-cache",
+    categoryPrompt: "Click to expand Network solutions",
+    itemPrompt: "Click to add 'Clear Gateway Cache' to playbook",
     tooltip: "Fastest low-risk attempt.",
     highlightDeploy: false,
   },
   "add-reboot": {
     activeCategoryId: "hardware",
     activeItemId: "reboot-server",
+    categoryPrompt: "Click to expand Hardware solutions",
+    itemPrompt: "Click to add 'Reboot Server' to playbook",
     tooltip: "Fallback if cache fails.",
     highlightDeploy: false,
   },
   deploy: {
     activeCategoryId: null,
     activeItemId: null,
+    categoryPrompt: null,
+    itemPrompt: null,
     tooltip: null,
     highlightDeploy: true,
   },
   running: {
     activeCategoryId: null,
     activeItemId: null,
+    categoryPrompt: null,
+    itemPrompt: null,
     tooltip: null,
     highlightDeploy: false,
   },
   done: {
     activeCategoryId: null,
     activeItemId: null,
+    categoryPrompt: null,
+    itemPrompt: null,
     tooltip: null,
     highlightDeploy: false,
   },

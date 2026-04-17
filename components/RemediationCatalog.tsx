@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 
+import ActivePulse from "@/components/ActivePulse";
 import {
   categories,
   tutorialByStep,
@@ -63,6 +64,27 @@ function Check() {
   );
 }
 
+/**
+ * Floating dark "ghost" tooltip with a right-pointing tail. Meant to sit
+ * inline next to the highlighted row.
+ */
+function GhostTooltip({ text }: { text: string }) {
+  return (
+    <div
+      role="tooltip"
+      className="relative shrink-0 ml-2 animate-page-in animate-tooltip-bob"
+    >
+      <div className="rounded-md bg-slate-900 text-white font-heading font-medium text-[11px] px-2.5 py-1.5 shadow-[0_10px_24px_rgba(0,0,0,0.45)] whitespace-nowrap border border-white/5">
+        {text}
+      </div>
+      <span
+        aria-hidden
+        className="absolute -left-1 top-1/2 -translate-y-1/2 w-0 h-0 border-t-[5px] border-b-[5px] border-r-[5px] border-t-transparent border-b-transparent border-r-slate-900"
+      />
+    </div>
+  );
+}
+
 export default function RemediationCatalog() {
   const tutorialStep = useWorkflowStore((s) => s.tutorialStep);
   const completedItemIds = useWorkflowStore((s) => s.completedItemIds);
@@ -71,6 +93,8 @@ export default function RemediationCatalog() {
   const config = tutorialByStep[tutorialStep];
   const activeCategoryId = config.activeCategoryId;
   const activeItemId = config.activeItemId;
+  const categoryPrompt = config.categoryPrompt;
+  const itemPrompt = config.itemPrompt;
   const tooltip = config.tooltip;
 
   const [expandedId, setExpandedId] = useState<CategoryId | null>(null);
@@ -90,9 +114,14 @@ export default function RemediationCatalog() {
         const isCompleted = completedCategoryIds.includes(cat.id);
         const isDisabled = !isActive && !isCompleted;
         const isExpanded = expandedId === cat.id;
+        const showCategoryGhost =
+          isActive && !isExpanded && !!categoryPrompt;
 
         return (
-          <div key={cat.id} className="relative border-b border-white/5">
+          <div
+            key={cat.id}
+            className="relative border-b border-white/5 overflow-visible"
+          >
             {isActive && (
               <span
                 aria-hidden
@@ -107,17 +136,26 @@ export default function RemediationCatalog() {
               aria-current={isActive ? "step" : undefined}
               onClick={() => setExpandedId(isExpanded ? null : cat.id)}
               className={[
-                "w-full flex items-center gap-3 pr-5 py-2.5 text-left transition-colors",
+                "w-full flex items-center gap-2.5 pr-5 py-2.5 text-left transition-colors",
                 isActive
-                  ? "text-white hover:bg-white/[0.04] cursor-pointer pl-[22px]"
+                  ? "text-white hover:bg-white/[0.04] cursor-pointer pl-3"
                   : isCompleted
                     ? "text-white/85 hover:bg-white/[0.04] cursor-pointer pl-[22px]"
                     : "text-white/40 cursor-not-allowed pl-[22px]",
               ].join(" ")}
             >
+              {/* Glowing Indicator — only on the active category */}
+              {isActive && (
+                <span className="w-[15px] flex items-center justify-start">
+                  <ActivePulse size={2} />
+                </span>
+              )}
+
               <span className="font-heading font-medium text-[13px] flex-1">
                 {cat.label}
               </span>
+
+              {showCategoryGhost && <GhostTooltip text={categoryPrompt!} />}
 
               {isDisabled && (
                 <span className="text-white/40">
@@ -142,6 +180,7 @@ export default function RemediationCatalog() {
                   const itemActive =
                     isActive && item.id === activeItemId;
                   const itemCompleted = completedItemIds.includes(item.id);
+                  const showItemGhost = itemActive && !!itemPrompt;
 
                   return (
                     <div key={item.id} className="relative">
@@ -158,26 +197,31 @@ export default function RemediationCatalog() {
                           itemActive && selectToolboxItem(item.id)
                         }
                         className={[
-                          "w-full flex items-center gap-3 pl-9 pr-5 py-1.5 text-left transition-colors",
+                          "w-full flex items-center gap-2.5 pr-5 py-1.5 text-left transition-colors",
                           itemActive
-                            ? "text-white hover:bg-white/[0.04] cursor-pointer"
+                            ? "text-white hover:bg-white/[0.04] cursor-pointer pl-5"
                             : itemCompleted
-                              ? "text-white/75"
-                              : "text-white/30 cursor-not-allowed",
+                              ? "text-white/75 pl-9"
+                              : "text-white/30 cursor-not-allowed pl-9",
                         ].join(" ")}
                       >
-                        <span
-                          className={`w-1 h-1 rounded-full ${
-                            itemActive
-                              ? "bg-accent-blue"
-                              : itemCompleted
-                                ? "bg-emerald-400"
-                                : "bg-white/25"
-                          }`}
-                        />
+                        {itemActive ? (
+                          <span className="w-[15px] flex items-center justify-start">
+                            <ActivePulse size={1.5} />
+                          </span>
+                        ) : (
+                          <span
+                            className={`w-1 h-1 rounded-full ${
+                              itemCompleted ? "bg-emerald-400" : "bg-white/25"
+                            }`}
+                          />
+                        )}
                         <span className="text-[12.5px] flex-1 leading-tight">
                           {item.label}
                         </span>
+                        {showItemGhost && (
+                          <GhostTooltip text={itemPrompt!} />
+                        )}
                         {itemCompleted && (
                           <span className="text-emerald-400/90">
                             <Check />
@@ -185,7 +229,7 @@ export default function RemediationCatalog() {
                         )}
                       </button>
                       {itemActive && tooltip && (
-                        <div className="pl-9 pr-5 pb-2 text-[11px] text-accent-blue/85 leading-snug">
+                        <div className="pl-5 pr-5 pb-2 text-[11px] text-accent-blue/85 leading-snug">
                           {tooltip}
                         </div>
                       )}
