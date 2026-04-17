@@ -28,7 +28,6 @@ type WorkflowState = {
 
   // Global header state
   phase: Phase;
-  isFailureSimulated: boolean;
 
   // Actions required by spec
   setNodes: (nodes: Node[]) => void;
@@ -50,7 +49,6 @@ type WorkflowState = {
 
   // Header state setters
   setPhase: (phase: Phase) => void;
-  setIsFailureSimulated: (value: boolean) => void;
 };
 
 const defaultEdgeOptions = {
@@ -64,7 +62,6 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
   isRunning: false,
   logs: [],
   phase: "waiting-for-permission",
-  isFailureSimulated: false,
 
   setNodes: (nodes) => set({ nodes }),
   setEdges: (edges) => set({ edges }),
@@ -103,5 +100,4 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
     }),
 
   setPhase: (phase) => set({ phase }),
-  setIsFailureSimulated: (isFailureSimulated) => set({ isFailureSimulated }),
 }));

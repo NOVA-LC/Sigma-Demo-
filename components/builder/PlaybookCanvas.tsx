@@ -4,7 +4,6 @@ import { useMemo, type ReactNode } from "react";
 import ReactFlow, {
   Background,
   BackgroundVariant,
-  Controls,
   ReactFlowProvider,
 } from "reactflow";
 import "reactflow/dist/style.css";
@@ -19,8 +18,6 @@ type Props = {
 function PlaybookCanvasInner({ children }: Props) {
   const nodes = useWorkflowStore((s) => s.nodes);
   const edges = useWorkflowStore((s) => s.edges);
-  const onNodesChange = useWorkflowStore((s) => s.onNodesChange);
-  const onEdgesChange = useWorkflowStore((s) => s.onEdgesChange);
 
   const nodeTypes = useMemo(() => ({ workflow: WorkflowNode }), []);
 
@@ -30,9 +27,16 @@ function PlaybookCanvasInner({ children }: Props) {
         nodes={nodes}
         edges={edges}
         nodeTypes={nodeTypes}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
+        // Pure static visualizer — no drag, no pan, no zoom, no selection.
+        nodesDraggable={false}
         nodesConnectable={false}
+        elementsSelectable={false}
+        zoomOnScroll={false}
+        zoomOnPinch={false}
+        zoomOnDoubleClick={false}
+        panOnDrag={false}
+        panOnScroll={false}
+        preventScrolling={false}
         fitView
         fitViewOptions={{ padding: 0.35 }}
         proOptions={{ hideAttribution: true }}
@@ -44,7 +48,6 @@ function PlaybookCanvasInner({ children }: Props) {
           size={1.2}
           color="#94A3B8"
         />
-        <Controls showInteractive={false} />
       </ReactFlow>
       {children}
     </div>

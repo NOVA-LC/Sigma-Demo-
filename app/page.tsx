@@ -14,35 +14,35 @@ type ChatEntry =
 const logs: LogLine[] = [
   {
     id: "l1",
-    timestamp: "2024-05-20 03:14:02",
+    timestamp: "2024-05-20 06:14:02",
     level: "INFO",
     service: "auth-svc",
     message: "User 8b22-f9a1-c402-9e31  Auth Request received (POST /v1/scan/verify)",
   },
   {
     id: "l2",
-    timestamp: "2024-05-20 03:14:02",
+    timestamp: "2024-05-20 06:14:02",
     level: "INFO",
     service: "auth-svc",
     message: "User 8b22-f9a1-c402-9e31  Token validated  status=ACTIVE  plan=PAID",
   },
   {
     id: "l3",
-    timestamp: "2024-05-20 03:14:03",
+    timestamp: "2024-05-20 06:14:03",
     level: "INFO",
     service: "gateway-04",
     message: "GET /scanner/session/7d13-4ac0 → 200 OK (12ms)",
   },
   {
     id: "l4",
-    timestamp: "2024-05-20 03:14:04",
+    timestamp: "2024-05-20 06:14:04",
     level: "WARN",
     service: "gateway-04",
     message: "Latency spike: p99=4821ms (threshold 800ms)",
   },
   {
     id: "l5",
-    timestamp: "2024-05-20 03:14:05",
+    timestamp: "2024-05-20 06:14:05",
     level: "ERROR",
     service: "gateway-04",
     message: "ConnectionTimeout at Gateway-04 (IP: 10.0.4.1) retry=3/3",
@@ -50,14 +50,14 @@ const logs: LogLine[] = [
   },
   {
     id: "l6",
-    timestamp: "2024-05-20 03:14:05",
+    timestamp: "2024-05-20 06:14:05",
     level: "ERROR",
     service: "gateway-04",
     message: "upstream scanner-api:9443 unreachable",
   },
   {
     id: "l7",
-    timestamp: "2024-05-20 03:14:06",
+    timestamp: "2024-05-20 06:14:06",
     level: "WARN",
     service: "router",
     message: "42 concurrent timeouts detected on scanner-gateway-04",
@@ -103,7 +103,7 @@ export default function TriageDashboardPage() {
           id: "m-jessica",
           kind: "message",
           author: "Jessica",
-          time: "03:14",
+          time: "6:14 AM",
           body: (
             <>
               <span className="font-semibold text-red-300">John&apos;s card isn&apos;t working again.</span>{" "}
@@ -127,7 +127,7 @@ export default function TriageDashboardPage() {
             id: "m-ack",
             kind: "message",
             author: "Sigma AI",
-            time: "03:14",
+            time: "6:14 AM",
             body: "I'm on it. Checking logs...",
           }),
       );
@@ -155,7 +155,7 @@ export default function TriageDashboardPage() {
             id: "m-diagnosis",
             kind: "message",
             author: "Sigma AI",
-            time: "03:14",
+            time: "6:14 AM",
             body: (
               <>
                 <span className="font-semibold">Identified the issue:</span>{" "}

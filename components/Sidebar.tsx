@@ -2,49 +2,247 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import type { ReactNode } from "react";
 
-const links = [
-  { label: "AI Triage Dashboard", href: "/" },
-  { label: "Playbook Builder", href: "/builder" },
+/* ── Minimal line icons ─────────────────────────────────────────────────── */
+
+function RadarIcon() {
+  return (
+    <svg
+      aria-hidden
+      viewBox="0 0 16 16"
+      className="w-[15px] h-[15px]"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.4"
+    >
+      <circle cx="8" cy="8" r="6.25" />
+      <circle cx="8" cy="8" r="3.5" />
+      <circle cx="8" cy="8" r="1" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
+function WrenchIcon() {
+  return (
+    <svg
+      aria-hidden
+      viewBox="0 0 16 16"
+      className="w-[15px] h-[15px]"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.4"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M10.5 2.4a3 3 0 0 1 2.9 4l2.2 2.2-1.4 1.4-2.2-2.2a3 3 0 0 1-4-2.9" />
+      <path d="M11.1 4.7 9.5 6.3l.8.8-1.6 1.6L3.5 14a1.2 1.2 0 1 1-1.6-1.6l5.3-5.3 1.6-1.6.8.8 1.5-1.6" />
+    </svg>
+  );
+}
+
+function UsersIcon() {
+  return (
+    <svg
+      aria-hidden
+      viewBox="0 0 16 16"
+      className="w-[15px] h-[15px]"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.4"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <circle cx="6" cy="5.5" r="2.3" />
+      <path d="M1.7 13.5c.4-2.3 2.2-3.7 4.3-3.7s3.9 1.4 4.3 3.7" />
+      <circle cx="11.5" cy="4.5" r="1.8" />
+      <path d="M14.5 11.8c-.2-1.6-1.3-2.6-2.8-2.6" />
+    </svg>
+  );
+}
+
+function LogsIcon() {
+  return (
+    <svg
+      aria-hidden
+      viewBox="0 0 16 16"
+      className="w-[15px] h-[15px]"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.4"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M3.5 2h6l3 3v8.5a.5.5 0 0 1-.5.5h-8.5a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5z" />
+      <path d="M9.5 2v3h3" />
+      <path d="M5.5 8.5h5M5.5 11h5M5.5 6h2.5" />
+    </svg>
+  );
+}
+
+function GearIcon() {
+  return (
+    <svg
+      aria-hidden
+      viewBox="0 0 16 16"
+      className="w-[15px] h-[15px]"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.4"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <circle cx="8" cy="8" r="2.2" />
+      <path d="M8 1.5v1.6M8 12.9v1.6M14.5 8h-1.6M3.1 8H1.5M12.6 3.4l-1.1 1.1M4.5 11.5l-1.1 1.1M12.6 12.6l-1.1-1.1M4.5 4.5 3.4 3.4" />
+    </svg>
+  );
+}
+
+/* ── Pulse dot ──────────────────────────────────────────────────────────── */
+
+type DotColor = "red" | "blue" | "emerald";
+
+const dotClassMap: Record<DotColor, string> = {
+  red: "bg-red-500",
+  blue: "bg-[#0099FF]",
+  emerald: "bg-emerald-500",
+};
+
+function PulseDot({ color }: { color: DotColor }) {
+  const bg = dotClassMap[color];
+  return (
+    <span className="relative flex items-center justify-center w-2 h-2 shrink-0">
+      <span
+        className={`absolute inline-flex h-full w-full rounded-full opacity-70 animate-ping ${bg}`}
+      />
+      <span className={`relative inline-flex rounded-full h-2 w-2 ${bg}`} />
+    </span>
+  );
+}
+
+/* ── Nav data ───────────────────────────────────────────────────────────── */
+
+type PrimaryLink = {
+  href: string;
+  label: string;
+  icon: ReactNode;
+  /** Always-on indicator (e.g. live incident). */
+  persistentDot?: DotColor;
+  /** Shown only when that route is currently active. */
+  activeDot?: DotColor;
+};
+
+const primaryLinks: PrimaryLink[] = [
+  {
+    href: "/",
+    label: "AI Triage Dashboard",
+    icon: <RadarIcon />,
+    persistentDot: "red",
+  },
+  {
+    href: "/builder",
+    label: "Playbook Builder",
+    icon: <WrenchIcon />,
+    activeDot: "blue",
+  },
 ];
+
+const systemLinks: { label: string; icon: ReactNode }[] = [
+  { label: "Active Agents", icon: <UsersIcon /> },
+  { label: "Execution Logs", icon: <LogsIcon /> },
+  { label: "Settings", icon: <GearIcon /> },
+];
+
+/* ── Sidebar ────────────────────────────────────────────────────────────── */
 
 export default function Sidebar() {
   const pathname = usePathname();
 
   return (
     <aside className="fixed inset-y-0 left-0 w-64 bg-primary-navy text-white flex flex-col">
-      <div className="px-6 py-6 border-b border-secondary-dark">
-        <h1 className="font-heading font-bold text-xl tracking-wide">
-          SIGMA AUTOMATE
-        </h1>
-        <p className="text-[11px] text-light-gray/70 mt-1 tracking-wider uppercase">
-          Autonomous Operations
-        </p>
+      {/* Brand */}
+      <div className="px-5 py-5 border-b border-white/5">
+        <div className="flex items-center gap-2.5">
+          <div className="w-7 h-7 rounded-md bg-gradient-to-br from-[#33ADFF] to-[#0077CC] flex items-center justify-center text-white font-heading font-bold text-sm shadow-[0_2px_8px_rgba(0,153,255,0.35)]">
+            σ
+          </div>
+          <div className="min-w-0">
+            <h1 className="font-heading font-bold text-[14px] tracking-[0.08em] text-white leading-tight">
+              SIGMA AUTOMATE
+            </h1>
+            <p className="text-[9px] text-white/40 tracking-[0.22em] uppercase mt-0.5">
+              Autonomous Operations
+            </p>
+          </div>
+        </div>
       </div>
 
-      <nav className="flex-1 px-3 py-6">
-        <ul className="space-y-1">
-          {links.map((link) => {
+      <nav className="flex-1 overflow-y-auto py-4">
+        {/* Primary links */}
+        <ul>
+          {primaryLinks.map((link) => {
             const isActive = pathname === link.href;
+            const dot = link.persistentDot ?? (isActive ? link.activeDot : null);
+
             return (
               <li key={link.href}>
                 <Link
                   href={link.href}
-                  className={`block px-4 py-2.5 rounded-md text-sm font-medium transition-colors ${
+                  className={`group flex items-center gap-3 pr-5 py-2.5 text-[13px] font-heading font-medium border-l-2 transition-colors ${
                     isActive
-                      ? "bg-secondary-dark text-white"
-                      : "text-light-gray hover:bg-secondary-dark hover:text-white"
+                      ? "border-[#0099FF] bg-white/[0.03] text-white pl-[22px]"
+                      : "border-transparent text-slate-400 hover:bg-white/[0.02] hover:text-white pl-[22px]"
                   }`}
                 >
-                  {link.label}
+                  <span
+                    className={
+                      isActive
+                        ? "text-[#0099FF]"
+                        : "text-slate-500 group-hover:text-slate-300 transition-colors"
+                    }
+                  >
+                    {link.icon}
+                  </span>
+                  <span className="flex-1 truncate">{link.label}</span>
+                  {dot && <PulseDot color={dot} />}
                 </Link>
               </li>
             );
           })}
         </ul>
+
+        {/* System section — fleshes out the fake architecture */}
+        <div className="mt-7 mb-2 pl-[22px] pr-5 text-[9px] font-heading font-semibold tracking-[0.24em] text-white/30 uppercase">
+          System
+        </div>
+        <ul>
+          {systemLinks.map((link) => (
+            <li key={link.label}>
+              <div
+                className="flex items-center gap-3 pl-[22px] pr-5 py-2 text-[13px] font-heading font-medium border-l-2 border-transparent text-slate-500/80 cursor-not-allowed select-none"
+                aria-disabled
+                title="Coming soon"
+              >
+                <span className="text-slate-600">{link.icon}</span>
+                <span className="flex-1 truncate">{link.label}</span>
+              </div>
+            </li>
+          ))}
+        </ul>
       </nav>
 
-      <div className="px-6 py-4 border-t border-secondary-dark text-[11px] text-light-gray/60">
+      {/* System Health widget */}
+      <div className="px-5 py-3 border-t border-white/5">
+        <div className="flex items-center gap-2">
+          <PulseDot color="emerald" />
+          <span className="text-[10px] text-white/55 tracking-wide font-heading font-medium">
+            Agents Online &amp; Monitoring
+          </span>
+        </div>
+      </div>
+
+      {/* Version footer */}
+      <div className="px-5 py-3 border-t border-white/5 text-[10px] text-white/30 tracking-wide">
         v0.1.0 — Demo Build
       </div>
     </aside>

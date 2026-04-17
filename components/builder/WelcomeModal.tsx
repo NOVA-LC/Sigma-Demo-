@@ -31,14 +31,14 @@ export default function WelcomeModal({ onDismiss }: Props) {
           id="welcome-heading"
           className="font-heading font-semibold text-2xl text-primary-navy mb-3"
         >
-          Guardrail Setup Required
+          Permission to Fix
         </h2>
 
         <p className="text-sm text-primary-navy/80 leading-relaxed">
-          I know the Scanner Gateway is down, but I need your permission to fix
-          it. Set up my guardrails. Think of it like bowling: you give me the
-          lane. If I can&apos;t fix it within those guardrails, I&apos;ll call
-          the Pro Bowler (you) to hit a strike.
+          I found the problem: the Scanner Gateway is down. But before I touch
+          the system, I need your permission. Give me the exact steps
+          I&apos;m allowed to try. If those don&apos;t work, I won&apos;t
+          guess. I&apos;ll stop and wake you up.
         </p>
 
         <div className="mt-7 flex justify-end">
@@ -47,7 +47,7 @@ export default function WelcomeModal({ onDismiss }: Props) {
             onClick={onDismiss}
             className="rounded-full bg-accent-blue hover:bg-[#33ADFF] transition-colors text-white font-heading font-semibold text-sm px-6 py-2.5 shadow-[0_0_24px_rgba(0,153,255,0.35)]"
           >
-            Okay, let&apos;s build
+            Set up guardrails
           </button>
         </div>
       </div>

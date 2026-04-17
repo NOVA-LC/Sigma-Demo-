@@ -15,13 +15,13 @@ type Entry =
     }
   | { kind: "typing"; id: string };
 
-// Jessica's original message arrived at 03:14 on the triage screen.
-// The resolution reply must land exactly 2 minutes later — 03:16.
+// Jessica's original message arrived at 6:14 AM on the triage screen.
+// The resolution reply must land exactly 2 minutes later — 6:16 AM.
 const jessicaOriginal: Entry = {
   kind: "message",
   id: "m-jessica-original",
   author: "Jessica",
-  time: "03:14",
+  time: "6:14 AM",
   body: (
     <>
       <span className="font-semibold text-red-300">
@@ -36,7 +36,7 @@ const aiResolution: Entry = {
   kind: "message",
   id: "m-ai-resolution",
   author: "Sigma AI",
-  time: "03:16",
+  time: "6:16 AM",
   body: (
     <>
       Sorry that took a second, Jessica! The system is refreshed. John should
@@ -49,7 +49,7 @@ const jessicaThanks: Entry = {
   kind: "message",
   id: "m-jessica-thanks",
   author: "Jessica",
-  time: "03:16",
+  time: "6:16 AM",
   body: <>It works! Thank you!</>,
 };
 

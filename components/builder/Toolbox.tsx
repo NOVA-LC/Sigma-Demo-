@@ -22,7 +22,7 @@ function Chevron({ expanded }: { expanded: boolean }) {
       }`}
       fill="none"
       stroke="currentColor"
-      strokeWidth="1.75"
+      strokeWidth="1.5"
       strokeLinecap="round"
       strokeLinejoin="round"
     >
@@ -39,12 +39,29 @@ function LockIcon() {
       className="w-3 h-3"
       fill="none"
       stroke="currentColor"
-      strokeWidth="1.2"
+      strokeWidth="1.1"
       strokeLinecap="round"
       strokeLinejoin="round"
     >
       <rect x="2.75" y="5.5" width="6.5" height="4.25" rx="1" />
       <path d="M4 5.5V4a2 2 0 0 1 4 0v1.5" />
+    </svg>
+  );
+}
+
+function Check() {
+  return (
+    <svg
+      aria-hidden
+      viewBox="0 0 12 12"
+      className="w-3 h-3"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M2.5 6.5 5 9l4.5-5.5" />
     </svg>
   );
 }
@@ -58,50 +75,45 @@ export default function Toolbox({
 }: Props) {
   const [expandedId, setExpandedId] = useState<CategoryId | null>(null);
 
-  // Collapse any open accordion when the tutorial step advances so the next
-  // pulsing category is the visual focal point.
   useEffect(() => {
     setExpandedId(null);
   }, [activeCategoryId]);
 
-  // A category is "completed" when at least one of its items has been added.
   const completedCategoryIds: CategoryId[] = categories
     .filter((c) => c.items.some((i) => completedItemIds.includes(i.id)))
     .map((c) => c.id);
 
   return (
     <aside className="w-1/4 min-w-[280px] bg-primary-navy text-white flex flex-col">
-      <div className="px-5 py-5 border-b border-secondary-dark">
-        <div className="font-heading font-semibold text-[11px] tracking-[0.2em] text-light-gray/70 uppercase">
+      <div className="px-5 py-5 border-b border-white/10">
+        <div className="font-heading font-semibold text-[10px] tracking-[0.22em] text-white/50 uppercase">
           Solutions Toolbox
         </div>
-        <h2 className="font-heading font-semibold text-lg text-white mt-1">
+        <h2 className="font-heading font-semibold text-base text-white mt-1.5">
           Remediation Catalog
         </h2>
-        <p className="text-[11px] text-light-gray/60 mt-1.5 leading-relaxed">
-          Browse by category. Expand the highlighted one to add its step to
-          your playbook.
+        <p className="text-xs text-white/50 mt-2 leading-relaxed">
+          Browse by category. Expand the highlighted one to add its step.
         </p>
       </div>
 
-      <div className="flex-1 px-3 py-4 space-y-2 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto">
         {categories.map((cat) => {
           const isActive = cat.id === activeCategoryId;
           const isCompleted = completedCategoryIds.includes(cat.id);
           const isDisabled = !isActive && !isCompleted;
           const isExpanded = expandedId === cat.id;
 
-          const headerClass = [
-            "w-full flex items-center gap-3 px-4 py-3 rounded-lg border transition-colors",
-            isActive
-              ? "bg-accent-blue/15 border-accent-blue text-white animate-tutorial-pulse cursor-pointer"
-              : isCompleted
-                ? "bg-emerald-500/10 border-emerald-500/40 text-white cursor-pointer"
-                : "bg-secondary-dark/60 border-white/10 text-light-gray/70 cursor-not-allowed opacity-60",
-          ].join(" ");
-
           return (
-            <div key={cat.id}>
+            <div key={cat.id} className="relative border-b border-white/10">
+              {/* Sleek vertical rail marks the active step */}
+              {isActive && (
+                <span
+                  aria-hidden
+                  className="absolute left-0 top-0 bottom-0 w-[2px] bg-accent-blue"
+                />
+              )}
+
               <button
                 type="button"
                 disabled={isDisabled}
@@ -110,102 +122,110 @@ export default function Toolbox({
                 onClick={() =>
                   setExpandedId(isExpanded ? null : cat.id)
                 }
-                className={headerClass}
+                className={[
+                  "w-full flex items-center gap-3 px-5 py-3.5 text-left transition-colors",
+                  isActive
+                    ? "text-white hover:bg-white/[0.04] cursor-pointer"
+                    : isCompleted
+                      ? "text-white/85 hover:bg-white/[0.04] cursor-pointer"
+                      : "text-white/40 cursor-not-allowed",
+                ].join(" ")}
               >
-                <span className="font-heading font-semibold text-sm flex-1 text-left">
+                <span className="font-heading font-medium text-[13.5px] flex-1">
                   {cat.label}
                 </span>
 
                 {isDisabled && (
-                  <span className="text-light-gray/50">
+                  <span className="text-white/40">
                     <LockIcon />
                   </span>
                 )}
 
                 {isCompleted && (
-                  <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-emerald-500 text-white text-[9px] leading-none">
-                    ✓
+                  <span className="text-emerald-400">
+                    <Check />
                   </span>
                 )}
 
-                {isActive && !isCompleted && (
-                  <span className="text-[10px] font-heading font-semibold tracking-[0.14em] text-accent-blue uppercase">
-                    Open
-                  </span>
-                )}
-
-                <Chevron expanded={isExpanded} />
+                <span className="text-white/40">
+                  <Chevron expanded={isExpanded} />
+                </span>
               </button>
 
               {isExpanded && (
-                <ul className="mt-1.5 ml-2 pl-3 border-l border-white/10 space-y-1.5 py-1.5">
+                <div className="pb-1.5">
                   {cat.items.map((item) => {
                     const itemActive =
                       isActive && item.id === activeItemId;
                     const itemCompleted = completedItemIds.includes(item.id);
 
-                    const itemClass = [
-                      "w-full text-left rounded-md px-3 py-2 transition-colors flex items-center gap-2 border",
-                      itemActive
-                        ? "bg-accent-blue/20 border-accent-blue text-white animate-tutorial-pulse cursor-pointer"
-                        : itemCompleted
-                          ? "bg-emerald-500/10 border-emerald-500/40 text-white cursor-default"
-                          : "bg-transparent border-transparent text-light-gray/45 cursor-not-allowed",
-                    ].join(" ");
-
                     return (
-                      <li key={item.id}>
+                      <div key={item.id} className="relative">
+                        {itemActive && (
+                          <span
+                            aria-hidden
+                            className="absolute left-0 top-0 bottom-0 w-[2px] bg-accent-blue/60"
+                          />
+                        )}
                         <button
                           type="button"
                           disabled={!itemActive}
                           onClick={() =>
                             itemActive && onSelect(item.id)
                           }
-                          className={itemClass}
+                          className={[
+                            "w-full flex items-center gap-3 pl-9 pr-5 py-2 text-left transition-colors",
+                            itemActive
+                              ? "text-white hover:bg-white/[0.04] cursor-pointer"
+                              : itemCompleted
+                                ? "text-white/75"
+                                : "text-white/30 cursor-not-allowed",
+                          ].join(" ")}
                         >
                           <span
-                            className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                            className={`w-1 h-1 rounded-full ${
                               itemActive
                                 ? "bg-accent-blue"
                                 : itemCompleted
                                   ? "bg-emerald-400"
-                                  : "bg-light-gray/30"
+                                  : "bg-white/25"
                             }`}
                           />
-                          <span className="flex-1 min-w-0">
-                            <span className="block font-heading font-medium text-[13px] leading-tight">
-                              {item.label}
-                            </span>
-                            {itemActive && tooltip && (
-                              <span className="block text-[10.5px] text-accent-blue/90 mt-0.5 leading-snug">
-                                {tooltip}
-                              </span>
-                            )}
+                          <span className="text-[13px] flex-1 leading-tight">
+                            {item.label}
                           </span>
                           {itemCompleted && (
-                            <span className="text-[10px] font-heading font-semibold tracking-[0.14em] text-emerald-300 uppercase">
-                              Added
-                            </span>
-                          )}
-                          {itemActive && (
-                            <span className="text-[10px] font-heading font-semibold tracking-[0.14em] text-accent-blue uppercase">
-                              Click
+                            <span className="text-emerald-400/90">
+                              <Check />
                             </span>
                           )}
                         </button>
-                      </li>
+                        {itemActive && tooltip && (
+                          <div className="pl-9 pr-5 pb-2 text-[11px] text-accent-blue/85 leading-snug">
+                            {tooltip}
+                          </div>
+                        )}
+                      </div>
                     );
                   })}
-                </ul>
+                </div>
               )}
             </div>
           );
         })}
       </div>
 
-      <div className="px-5 py-4 border-t border-secondary-dark text-[10px] text-light-gray/50 leading-snug">
-        Tip: every step is a guardrail. If step 1 fails, the next one runs
-        automatically.
+      <div className="px-4 pt-3 pb-4">
+        <div className="rounded-lg bg-accent-blue/10 border border-accent-blue/20 p-4 text-sm text-white/80 leading-relaxed">
+          <div className="font-heading font-semibold text-white mb-1.5">
+            💡 How this works:
+          </div>
+          <p>
+            Order matters. Put your easiest fix first. I will run Step 1 and
+            check if the gateway is back online. If it works, I stop. If it
+            fails, I automatically move to Step 2.
+          </p>
+        </div>
       </div>
     </aside>
   );
