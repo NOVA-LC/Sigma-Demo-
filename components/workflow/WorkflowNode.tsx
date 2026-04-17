@@ -1,16 +1,17 @@
 import { Handle, Position, NodeProps } from "reactflow";
 
+export type NodeKind = "Trigger" | "Decision" | "Action";
+
 export type WorkflowNodeData = {
   label: string;
-  kind: "Trigger" | "Decision" | "Action" | "Verify";
+  kind: NodeKind;
   borderColor?: string;
 };
 
-const kindLabels: Record<WorkflowNodeData["kind"], string> = {
+const kindLabels: Record<NodeKind, string> = {
   Trigger: "TRIGGER",
   Decision: "DECISION",
   Action: "ACTION",
-  Verify: "VERIFY",
 };
 
 export default function WorkflowNode({ data }: NodeProps<WorkflowNodeData>) {
@@ -24,8 +25,8 @@ export default function WorkflowNode({ data }: NodeProps<WorkflowNodeData>) {
       <Handle
         type="target"
         position={Position.Top}
-        isConnectable={false}
-        className="!bg-slate-300 !w-2 !h-2 !border-0"
+        isConnectable
+        className="!bg-slate-400 !w-2.5 !h-2.5 !border-0"
       />
 
       <div className="text-[10px] font-heading font-semibold tracking-[0.12em] text-slate-400 mb-1.5">
@@ -38,8 +39,8 @@ export default function WorkflowNode({ data }: NodeProps<WorkflowNodeData>) {
       <Handle
         type="source"
         position={Position.Bottom}
-        isConnectable={false}
-        className="!bg-slate-300 !w-2 !h-2 !border-0"
+        isConnectable
+        className="!bg-slate-400 !w-2.5 !h-2.5 !border-0"
       />
     </div>
   );
